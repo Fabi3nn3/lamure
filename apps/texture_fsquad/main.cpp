@@ -255,8 +255,16 @@ demo_app::initialize()
 
     buffer_ptr positions_normals_buf;
 
-    positions_normals_buf = _device->create_buffer(BIND_VERTEX_BUFFER, USAGE_STATIC_DRAW, positions_normals.size() * sizeof(scm::math::vec3f), &positions_normals.front());
-    _index_buffer = _device->create_buffer(BIND_INDEX_BUFFER,  USAGE_STATIC_DRAW, indices.size() * sizeof(unsigned short), &indices.front());
+    positions_normals_buf = _device->create_buffer(BIND_VERTEX_BUFFER,
+     USAGE_STATIC_DRAW, 
+     positions_normals.size() * sizeof(scm::math::vec3f), 
+     &positions_normals.front());
+
+    _index_buffer = _device->create_buffer(
+    	BIND_INDEX_BUFFER,  
+    	USAGE_STATIC_DRAW, 
+    	indices.size() * sizeof(unsigned short), 
+    	&indices.front());
 
     _vertex_array = _device->create_vertex_array(vertex_format(0, 0, TYPE_VEC3F, 2 * sizeof(scm::math::vec3f))
                                                               (0, 1, TYPE_VEC3F, 2 * sizeof(scm::math::vec3f)),
@@ -284,8 +292,10 @@ demo_app::initialize()
     _color_mask_green   = _device->create_blend_state(true, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO,
                                                              EQ_FUNC_ADD, EQ_FUNC_ADD, COLOR_GREEN | COLOR_BLUE);
 
-    _box.reset(new box_geometry(_device, vec3f(-0.5f), vec3f(0.5f)));
-    _obj.reset(new wavefront_obj_geometry(_device, "../../apps/texture_fsquad/geometry/CHALLENGER71.obj"));
+    
+    //_box.reset(new box_geometry(_device, vec3f(-0.5f), vec3f(0.5f)));
+    _quad.reset(new quad_geometry(_device, vec2f(0.0f, 0.0f), vec2f(1.0f, 1.0f)));
+    //_obj.reset(new wavefront_obj_geometry(_device, "../../apps/texture_fsquad/geometry/CHALLENGER71.obj"));
 
     //_vertex_array = _device->create_vertex_array(vertex_format(0, "in_position", TYPE_VEC3F)
     //                                                          (1, "in_normal", TYPE_VEC3F),
@@ -293,10 +303,10 @@ demo_app::initialize()
     //                                                    (normals_buf),
     //                                             _shader_program);
 
-    texture_loader tex_loader;
+    //texture_loader tex_loader;
     //_color_texture = tex_loader.load_texture_2d(*_device, "e:/working_copies/schism_x64/resources/textures/16bit_rgb_test.png" , true);
-    _color_texture = tex_loader.load_texture_2d(*_device,
-        "../../apps/texture_fsquad/textures/bg-holz.jpg", true, false);
+    /*_color_texture = tex_loader.load_texture_2d(*_device,
+        "../../apps/texture_fsquad/textures/bg-holz.jpg", true, false);*/
         //"e:/working_copies/schism_x64/resources/textures/angel_512.jpg", true, true);
 
     _filter_lin_mip = _device->create_sampler_state(FILTER_MIN_MAG_MIP_LINEAR, WRAP_CLAMP_TO_EDGE);
@@ -398,11 +408,12 @@ demo_app::display()
 
         _context->bind_program(_shader_program);
 
-        _context->bind_texture(_color_texture, _filter_aniso,   0);
-        _context->bind_texture(_color_texture, _filter_nearest, 1);
+        //_context->bind_texture(_color_texture, _filter_aniso,   0);
+        //_context->bind_texture(_color_texture, _filter_nearest, 1);
 
         //_box->draw(_context, geometry::MODE_SOLID);
-        _obj->draw(_context);
+        _quad->draw(_context);
+        //_obj->draw(_context);
     }
 
     _context->resolve_multi_sample_buffer(_framebuffer, _framebuffer_resolved);
