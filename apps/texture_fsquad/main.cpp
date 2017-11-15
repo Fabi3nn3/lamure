@@ -196,80 +196,6 @@ demo_app::initialize()
     _shader_program->uniform("material_shininess", 128.0f);
     _shader_program->uniform("material_opacity", 1.0f);
 
-    //optional?!
-    //scm::out() << *_device << scm::log::end;
-
-#if 0
-    std::vector<scm::math::vec3f>   positions;
-    std::vector<scm::math::vec3f>   normals;
-    std::vector<unsigned short>              indices;
-
-    positions.push_back(scm::math::vec3f(0.0f, 0.0f, 0.0f));
-    positions.push_back(scm::math::vec3f(1.0f, 0.0f, 0.0f));
-    positions.push_back(scm::math::vec3f(1.0f, 1.0f, 0.0f));
-    positions.push_back(scm::math::vec3f(0.0f, 1.0f, 0.0f));
-
-    normals.push_back(scm::math::vec3f(0.0f, 0.0f, 1.0f));
-    normals.push_back(scm::math::vec3f(0.0f, 0.0f, 1.0f));
-    normals.push_back(scm::math::vec3f(0.0f, 0.0f, 1.0f));
-    normals.push_back(scm::math::vec3f(0.0f, 0.0f, 1.0f));
-
-    indices.push_back(0);
-    indices.push_back(1);
-    indices.push_back(2);
-    indices.push_back(0);
-    indices.push_back(2);
-    indices.push_back(3);
-
-    buffer_ptr positions_buf;
-    buffer_ptr normals_buf;
-
-    positions_buf = _device->create_buffer(BIND_VERTEX_BUFFER, USAGE_STATIC_DRAW, positions.size() * sizeof(scm::math::vec3f), &positions.front());
-    normals_buf   = _device->create_buffer(BIND_VERTEX_BUFFER, USAGE_STATIC_DRAW, normals.size() * sizeof(scm::math::vec3f), &normals.front());
-    _index_buffer = _device->create_buffer(BIND_INDEX_BUFFER,  USAGE_STATIC_DRAW, indices.size() * sizeof(unsigned short), &indices.front());
-
-    _vertex_array = _device->create_vertex_array(vertex_format(0, 0, TYPE_VEC3F)(1, 1, TYPE_VEC3F),
-                                                 list_of(positions_buf)(normals_buf));
-#else
-    std::vector<scm::math::vec3f>   positions_normals;
-    std::vector<unsigned short>              indices;
-
-    positions_normals.push_back(scm::math::vec3f(0.0f, 0.0f, 0.0f));
-    positions_normals.push_back(scm::math::vec3f(0.0f, 0.0f, 1.0f));
-
-    positions_normals.push_back(scm::math::vec3f(1.0f, 0.0f, 0.0f));
-    positions_normals.push_back(scm::math::vec3f(0.0f, 0.0f, 1.0f));
-
-    positions_normals.push_back(scm::math::vec3f(1.0f, 1.0f, 0.0f));
-    positions_normals.push_back(scm::math::vec3f(0.0f, 0.0f, 1.0f));
-
-    positions_normals.push_back(scm::math::vec3f(0.0f, 1.0f, 0.0f));
-    positions_normals.push_back(scm::math::vec3f(0.0f, 0.0f, 1.0f));
-
-    indices.push_back(0);
-    indices.push_back(1);
-    indices.push_back(2);
-    indices.push_back(0);
-    indices.push_back(2);
-    indices.push_back(3);
-
-    buffer_ptr positions_normals_buf;
-
-    positions_normals_buf = _device->create_buffer(BIND_VERTEX_BUFFER,
-     USAGE_STATIC_DRAW, 
-     positions_normals.size() * sizeof(scm::math::vec3f), 
-     &positions_normals.front());
-
-    _index_buffer = _device->create_buffer(
-    	BIND_INDEX_BUFFER,  
-    	USAGE_STATIC_DRAW, 
-    	indices.size() * sizeof(unsigned short), 
-    	&indices.front());
-
-    _vertex_array = _device->create_vertex_array(vertex_format(0, 0, TYPE_VEC3F, 2 * sizeof(scm::math::vec3f))
-                                                              (0, 1, TYPE_VEC3F, 2 * sizeof(scm::math::vec3f)),
-                                                 list_of(positions_normals_buf));
-#endif
 
     _dstate_less    = _device->create_depth_stencil_state(true,
     	true, 
@@ -294,8 +220,8 @@ demo_app::initialize()
 
     
     //_box.reset(new box_geometry(_device, vec3f(-0.5f), vec3f(0.5f)));
-    _quad.reset(new quad_geometry(_device, vec2f(0.0f, 0.0f), vec2f(1.0f, 1.0f)));
-    //_obj.reset(new wavefront_obj_geometry(_device, "../../apps/texture_fsquad/geometry/CHALLENGER71.obj"));
+    //_quad.reset(new quad_geometry(_device, vec2f(0.0f, 0.0f), vec2f(1.0f, 1.0f)));
+    _obj.reset(new wavefront_obj_geometry(_device, "../../apps/texture_fsquad/geometry/quad.obj"));
 
     //_vertex_array = _device->create_vertex_array(vertex_format(0, "in_position", TYPE_VEC3F)
     //                                                          (1, "in_normal", TYPE_VEC3F),
@@ -303,10 +229,11 @@ demo_app::initialize()
     //                                                    (normals_buf),
     //                                             _shader_program);
 
-    //texture_loader tex_loader;
+    texture_loader tex_loader;
     //_color_texture = tex_loader.load_texture_2d(*_device, "e:/working_copies/schism_x64/resources/textures/16bit_rgb_test.png" , true);
-    /*_color_texture = tex_loader.load_texture_2d(*_device,
-        "../../apps/texture_fsquad/textures/bg-holz.jpg", true, false);*/
+    _color_texture = tex_loader.load_texture_2d(*_device,
+        //"../../apps/texture_fsquad/textures/bg-holz.jpg", true, false);
+        "../../apps/texture_fsquad/textures/color_grid.png", true, false);
         //"e:/working_copies/schism_x64/resources/textures/angel_512.jpg", true, true);
 
     _filter_lin_mip = _device->create_sampler_state(FILTER_MIN_MAG_MIP_LINEAR, WRAP_CLAMP_TO_EDGE);
@@ -350,7 +277,7 @@ demo_app::initialize()
         layout(location = 0) out vec4 out_color;\
         void main()\
         {\
-            out_color = texelFetch(in_texture, ivec2(gl_FragCoord.xy), 0).rgba;\
+            out_color = vec4(abs(0.2*sin(gl_FragCoord.y/200.0)), 0.0, 0.0, 1.0) + texelFetch(in_texture, ivec2(gl_FragCoord.xy), 0).rgba;\
         }\
         ";
     ////texture(in_texture, tex_coord);
@@ -408,12 +335,12 @@ demo_app::display()
 
         _context->bind_program(_shader_program);
 
-        //_context->bind_texture(_color_texture, _filter_aniso,   0);
-        //_context->bind_texture(_color_texture, _filter_nearest, 1);
+        _context->bind_texture(_color_texture, _filter_aniso,   0);
+        _context->bind_texture(_color_texture, _filter_nearest, 1);
 
         //_box->draw(_context, geometry::MODE_SOLID);
-        _quad->draw(_context);
-        //_obj->draw(_context);
+        //_quad->draw(_context);
+        _obj->draw(_context, geometry::MODE_SOLID);
     }
 
     _context->resolve_multi_sample_buffer(_framebuffer, _framebuffer_resolved);
