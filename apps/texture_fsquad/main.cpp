@@ -43,6 +43,13 @@ public:
         _initx = 0;
         _inity = 0;
 
+        //für die maustasten, click false
+        _lb_down = false;
+        _mb_down = false;
+        _rb_down = false;
+
+        _dolly_sens = 1.0f;
+
         _projection_matrix = scm::math::mat4f::identity();
     }
     virtual ~demo_app();
@@ -50,13 +57,20 @@ public:
     bool initialize();
     void display();
     void resize(int w, int h);
+    void mousefunc(int button, int state, int x, int y);
+    void mousemotion(int x, int y);
     void keyboard(unsigned char key, int x, int y);
 
 private:
-	//something with mouse
+    //trackball -> mouse and x+y coord.
     scm::gl::trackball_manipulator _trackball_manip;
     float _initx;
     float _inity;
+
+    //mouse button state
+    bool _lb_down;
+    bool _mb_down;
+    bool _rb_down;
 
     //intensity of zoom
     float _dolly_sens;
@@ -74,7 +88,8 @@ private:
 
     scm::shared_ptr<scm::gl::box_geometry>  _box;
     scm::shared_ptr<scm::gl::wavefront_obj_geometry>  _obj;
-
+    scm::gl::depth_stencil_state_ptr     _dstate_less;
+    scm::gl::depth_stencil_state_ptr     _dstate_disable;
 
     scm::gl::blend_state_ptr            _no_blend;
     scm::gl::blend_state_ptr            _blend_omsa;
@@ -89,6 +104,7 @@ private:
 
     scm::gl::texture_2d_ptr             _color_buffer;
     scm::gl::texture_2d_ptr             _color_buffer_resolved;
+    scm::gl::texture_2d_ptr             _depth_buffer;
     scm::gl::frame_buffer_ptr           _framebuffer;
     scm::gl::frame_buffer_ptr           _framebuffer_resolved;
     scm::shared_ptr<scm::gl::quad_geometry>  _quad;
@@ -123,7 +139,7 @@ demo_app::~demo_app()
 
     _filter_linear.reset();
     _color_buffer.reset();
-   // _depth_buffer.reset();
+    _depth_buffer.reset();
     _framebuffer.reset();
     _quad.reset();
     _pass_through_shader.reset();
@@ -140,7 +156,7 @@ bool
 demo_app::initialize()
 {
 
-	std::cout << "test" << std::endl;
+    std::cout << "test" << std::endl;
     using namespace scm;
     using namespace scm::gl;
     using namespace scm::math;
@@ -154,8 +170,6 @@ demo_app::initialize()
         scm::err() << "error reading shader files" << log::end;
         return (false);
     }
-
-    std::cout << "test" << std::endl;
 
     _device.reset(new scm::gl::render_device());
     _context = _device->main_context();
@@ -181,22 +195,22 @@ demo_app::initialize()
     _shader_program->uniform("material_opacity", 1.0f);
 
 
-    /*_dstate_less    = _device->create_depth_stencil_state(true,
-    	true, 
-    	COMPARISON_LESS
-    	);
+    _dstate_less    = _device->create_depth_stencil_state(true,
+        true, 
+        COMPARISON_LESS
+        );
 
     depth_stencil_state_desc dstate = _dstate_less->descriptor();
     dstate._depth_test = false;
 
     _dstate_disable = _device->create_depth_stencil_state(dstate);
-    //_dstate_disable = _device->create_depth_stencil_state(false);*/
+    //_dstate_disable = _device->create_depth_stencil_state(false);
 
     _no_blend           = _device->create_blend_state(false, 
-    	FUNC_ONE, 
-    	FUNC_ZERO, 
-    	FUNC_ONE, 
-    	FUNC_ZERO);
+        FUNC_ONE, 
+        FUNC_ZERO, 
+        FUNC_ONE, 
+        FUNC_ZERO);
     
     _blend_omsa         = _device->create_blend_state(true, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO);
     _color_mask_green   = _device->create_blend_state(true, FUNC_SRC_ALPHA, FUNC_ONE_MINUS_SRC_ALPHA, FUNC_ONE, FUNC_ZERO,
@@ -227,9 +241,10 @@ demo_app::initialize()
 
     // initialize framebuffer /////////////////////////////////////////////////////////////////////
     _color_buffer          = _device->create_texture_2d(vec2ui(winx, winy) * 1, FORMAT_RGBA_8, 1, 1, 8);
+    _depth_buffer          = _device->create_texture_2d(vec2ui(winx, winy) * 1, FORMAT_D24, 1, 1, 8);
     _framebuffer           = _device->create_frame_buffer();
-    _framebuffer->attach_color_buffer(0, _color_buffer);
-   
+    _framebuffer->attach_color_buffer(0, _color_buffer);.
+    _framebuffer->attach_depth_stencil_buffer(_depth_buffer);
 
     _color_buffer_resolved = _device->create_texture_2d(vec2ui(winx, winy) * 1, FORMAT_RGBA_8);
     _framebuffer_resolved  = _device->create_frame_buffer();
@@ -312,7 +327,7 @@ demo_app::display()
         _context->set_frame_buffer(_framebuffer);
         _context->set_viewport(viewport(vec2ui(0, 0), 1 * vec2ui(winx, winy)));
 
-       // _context->set_depth_stencil_state(_dstate_less);
+        _context->set_depth_stencil_state(_dstate_less);
         _context->set_blend_state(_no_blend);
         _context->set_rasterizer_state(_ms_back_cull);
 
@@ -352,6 +367,16 @@ demo_app::display()
 
     // swap the back and front buffer, so that the drawn stuff can be seen
     glutSwapBuffers();
+
+    /*if (fraps_bug) {
+        if (glGetError() != GL_NO_ERROR) {
+            std::cout << "fraps bug after swap handled" << std::endl;
+        }
+        else {
+            //std::cout << "nothing after swap" << std::endl;
+        }
+        fraps_bug = false;
+    }*/
 }
 
 void
@@ -370,7 +395,52 @@ demo_app::resize(int w, int h)
     scm::math::perspective_matrix(_projection_matrix, 60.f, float(w)/float(h), 0.1f, 100.0f);
 }
 
+//linke Maustaste: Left Button Down prüfen -> wenn ja, dann rotate
+//rechte Maustase: right button down -> wenn ja, zoom in
+//mausrad: middle button -> wenn ja, translate
+void
+demo_app::mousefunc(int button, int state, int x, int y)
+{
+    switch (button) {
+        case GLUT_LEFT_BUTTON:
+            {
+                _lb_down = (state == GLUT_DOWN) ? true : false;
+            }break;
+        case GLUT_MIDDLE_BUTTON:
+            {
+                _mb_down = (state == GLUT_DOWN) ? true : false;
+            }break;
+        case GLUT_RIGHT_BUTTON:
+            {
+                _rb_down = (state == GLUT_DOWN) ? true : false;
+            }break;
+    }
 
+    _initx = 2.f * float(x - (winx/2))/float(winx);
+    _inity = 2.f * float(winy - y - (winy/2))/float(winy);
+}
+
+void
+demo_app::mousemotion(int x, int y)
+{
+    float nx = 2.f * float(x - (winx/2))/float(winx);
+    float ny = 2.f * float(winy - y - (winy/2))/float(winy);
+
+    //std::cout << "nx " << nx << " ny " << ny << std::endl;
+
+    if (_lb_down) {
+        _trackball_manip.rotation(_initx, _inity, nx, ny);
+    }
+    if (_rb_down) {
+        _trackball_manip.dolly(_dolly_sens * (ny - _inity));
+    }
+    if (_mb_down) {
+        _trackball_manip.translation(nx - _initx, ny - _inity);
+    }
+
+    _inity = ny;
+    _initx = nx;
+}
 
 void
 demo_app::keyboard(unsigned char key, int x, int y)
@@ -392,6 +462,19 @@ glut_resize(int w, int h)
         _application->resize(w, h);
 }
 
+void
+glut_mousefunc(int button, int state, int x, int y)
+{
+    if (_application)
+        _application->mousefunc(button, state, x, y);
+}
+
+void
+glut_mousemotion(int x, int y)
+{
+    if (_application)
+        _application->mousemotion(x, y);
+}
 
 void
 glut_idle()
@@ -446,6 +529,8 @@ int main(int argc, char **argv)
     glutReshapeFunc(glut_resize);
     glutDisplayFunc(glut_display);
     glutKeyboardFunc(glut_keyboard);
+    glutMouseFunc(glut_mousefunc);
+    glutMotionFunc(glut_mousemotion);
     glutIdleFunc(glut_idle);
 
     // and finally start the event loop
