@@ -1,5 +1,6 @@
 #include <iostream>
 #include <sstream>
+#include <fstream>
 #include <vector>
 
 #include <boost/assign/list_of.hpp>
@@ -60,6 +61,7 @@ public:
     void mousefunc(int button, int state, int x, int y);
     void mousemotion(int x, int y);
     void keyboard(unsigned char key, int x, int y);
+    void tileloader();
 
 private:
     //trackball -> mouse and x+y coord.
@@ -243,7 +245,7 @@ demo_app::initialize()
     _color_buffer          = _device->create_texture_2d(vec2ui(winx, winy) * 1, FORMAT_RGBA_8, 1, 1, 8);
     _depth_buffer          = _device->create_texture_2d(vec2ui(winx, winy) * 1, FORMAT_D24, 1, 1, 8);
     _framebuffer           = _device->create_frame_buffer();
-    _framebuffer->attach_color_buffer(0, _color_buffer);.
+    _framebuffer->attach_color_buffer(0, _color_buffer);
     _framebuffer->attach_depth_stencil_buffer(_depth_buffer);
 
     _color_buffer_resolved = _device->create_texture_2d(vec2ui(winx, winy) * 1, FORMAT_RGBA_8);
@@ -501,11 +503,40 @@ glut_keyboard(unsigned char key, int x, int y)
     }
 }
 
+void tileloader(){
+	std::ifstream is ("../../apps/texture_fsquad/datatiles/numbered_tiles_w256_h256_t8x8_RGBA8.data");
+	//std::ifstream is ("../../apps/texture_fsquad/datatiles/0.data");
+	if (is) {
+		
+		//get length of file
+		is.seekg(0, is.end);
+		int length = is.tellg();
+		is.seekg(0, is.beg);
+
+		//allocate memory
+		char * buffer = new char [length];
+
+		//read data as a block
+		is.read(buffer, length);
+
+		is.close();
+
+		//print content
+		std::cout.write(buffer, length);
+
+		delete[] buffer; 
+	}
+	else{
+		std::cout << "no data" <<std::endl;
+	}
+}
 
 int main(int argc, char **argv)
 {
     scm::shared_ptr<scm::core>      scm_core(new scm::core(argc, argv));
     _application.reset(new demo_app());
+
+    tileloader();
 
     // the stuff that has to be done
     glutInit(&argc, argv);
