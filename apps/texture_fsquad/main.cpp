@@ -32,6 +32,9 @@
 static int winx = 1600;
 static int winy = 1024;
 
+ //set of tiles
+std::vector<int> vec_set;
+
 const scm::math::vec3f diffuse(0.7f, 0.7f, 0.7f);
 const scm::math::vec3f specular(0.7f, 0.7f, 0.7f);
 const scm::math::vec3f ambient(0.0f, 0.0f, 0.0f);
@@ -62,6 +65,7 @@ public:
     void mousemotion(int x, int y);
     void keyboard(unsigned char key, int x, int y);
     void tileloader();
+    void setset();
 
 private:
     //trackball -> mouse and x+y coord.
@@ -73,6 +77,9 @@ private:
     bool _lb_down;
     bool _mb_down;
     bool _rb_down;
+
+    //set of tiles
+    std::vector<int> vec_set;
 
     //intensity of zoom
     float _dolly_sens;
@@ -158,7 +165,6 @@ bool
 demo_app::initialize()
 {
 
-    std::cout << "test" << std::endl;
     using namespace scm;
     using namespace scm::gl;
     using namespace scm::math;
@@ -504,10 +510,13 @@ glut_keyboard(unsigned char key, int x, int y)
 }
 
 void tileloader(){
-	std::ifstream is ("../../apps/texture_fsquad/datatiles/numbered_tiles_w256_h256_t8x8_RGBA8.data");
-	//std::ifstream is ("../../apps/texture_fsquad/datatiles/0.data");
+	//std::ifstream is ("../../apps/texture_fsquad/datatiles/numbered_tiles_w256_h256_t8x8_RGBA8.data");
+	std::ifstream is ("../../apps/texture_fsquad/datatiles/0.data");
+    int tile_id = vec_set[0];
+    int offsetbeg =(256*256*4*8)*tile_id;
+    std::cout << offsetbeg << std::endl;
+    //int offsetend;
 	if (is) {
-		
 		//get length of file
 		is.seekg(0, is.end);
 		int length = is.tellg();
@@ -522,7 +531,7 @@ void tileloader(){
 		is.close();
 
 		//print content
-		std::cout.write(buffer, length);
+		//std::cout.write(buffer, length);
 
 		delete[] buffer; 
 	}
@@ -531,11 +540,16 @@ void tileloader(){
 	}
 }
 
+void setset(int n){
+    vec_set.push_back(n);
+    std::cout << vec_set[0];
+}
+
 int main(int argc, char **argv)
 {
     scm::shared_ptr<scm::core>      scm_core(new scm::core(argc, argv));
     _application.reset(new demo_app());
-
+    setset(4);
     tileloader();
 
     // the stuff that has to be done
