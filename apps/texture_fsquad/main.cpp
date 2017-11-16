@@ -35,6 +35,9 @@ static int winy = 1024;
  //set of tiles
 std::vector<int> vec_set;
 
+scm::shared_ptr<scm::gl::render_context>    _context;
+scm::gl::texture_2d_ptr             _test_texture;
+
 const scm::math::vec3f diffuse(0.7f, 0.7f, 0.7f);
 const scm::math::vec3f specular(0.7f, 0.7f, 0.7f);
 const scm::math::vec3f ambient(0.0f, 0.0f, 0.0f);
@@ -86,7 +89,7 @@ private:
 
     //GraKa Stuff
     scm::shared_ptr<scm::gl::render_device>     _device;
-    scm::shared_ptr<scm::gl::render_context>    _context;
+    //_context
 
     scm::gl::program_ptr        _shader_program;
 
@@ -240,7 +243,9 @@ demo_app::initialize()
     _color_texture = tex_loader.load_texture_2d(*_device,
         //"../../apps/texture_fsquad/textures/bg-holz.jpg", true, false);
         "../../apps/texture_fsquad/textures/color_grid.png", true, false);
+        //"../../apps/texture_fsquad/datatiles/0.png", true, false);
         //"e:/working_copies/schism_x64/resources/textures/angel_512.jpg", true, true);
+
 
     _filter_lin_mip = _device->create_sampler_state(FILTER_MIN_MAG_MIP_LINEAR, WRAP_CLAMP_TO_EDGE);
     _filter_aniso   = _device->create_sampler_state(FILTER_ANISOTROPIC, WRAP_CLAMP_TO_EDGE, 16);
@@ -253,6 +258,8 @@ demo_app::initialize()
     _framebuffer           = _device->create_frame_buffer();
     _framebuffer->attach_color_buffer(0, _color_buffer);
     _framebuffer->attach_depth_stencil_buffer(_depth_buffer);
+    _test_texture          = _device->create_texture_2d(vec2ui(256, 256) * 1, FORMAT_RGBA_8);//hardcode
+
 
     _color_buffer_resolved = _device->create_texture_2d(vec2ui(winx, winy) * 1, FORMAT_RGBA_8);
     _framebuffer_resolved  = _device->create_frame_buffer();
@@ -341,8 +348,11 @@ demo_app::display()
 
         _context->bind_program(_shader_program);
 
-        _context->bind_texture(_color_texture, _filter_aniso,   0);
-        _context->bind_texture(_color_texture, _filter_nearest, 1);
+        //_context->bind_texture(_color_texture, _filter_aniso,   0);
+        //_context->bind_texture(_color_texture, _filter_nearest, 1);
+
+        _context->bind_texture(_test_texture, _filter_aniso,   0);
+        _context->bind_texture(_test_texture, _filter_nearest, 1);
 
         //_box->draw(_context, geometry::MODE_SOLID);
         //_quad->draw(_context);
@@ -510,17 +520,23 @@ glut_keyboard(unsigned char key, int x, int y)
 }
 
 void tileloader(){
-	//std::ifstream is ("../../apps/texture_fsquad/datatiles/numbered_tiles_w256_h256_t8x8_RGBA8.data");
-	std::ifstream is ("../../apps/texture_fsquad/datatiles/0.data");
-    int tile_id = vec_set[0];
-    int offsetbeg =(256*256*4*8)*tile_id;
-    std::cout << offsetbeg << std::endl;
+	std::ifstream is ("../../apps/texture_fsquad/datatiles/numbered_tiles_w256_h256_t8x8_RGBA8.data", std::ios::binary);
+	//std::ifstream is ("../../apps/texture_fsquad/datatiles/0.data");
+
+    int tile_id_b = vec_set[0];
+    int tile_id_e = vec_set[1];
+    int offsetbeg =(256*256*4)*(tile_id_b);//*8
+    int offsetend =(256*256*4)*(tile_id_e);
+    std::cout << offsetbeg << " & " << offsetend << std::endl;
     //int offsetend;
 	if (is) {
-		//get length of file
-		is.seekg(0, is.end);
-		int length = is.tellg();
-		is.seekg(0, is.beg);
+
+        is.seekg(offsetend);
+        is.seekg(0,is.cur);
+        int length = offsetend - offsetbeg;
+        int lengthofdata = (256*256*4)*21;//*8 for bits
+        std::cout << "length: " << length << "length of data: " << lengthofdata << std::endl;
+        is.seekg(offsetbeg);
 
 		//allocate memory
 		char * buffer = new char [length];
@@ -528,10 +544,23 @@ void tileloader(){
 		//read data as a block
 		is.read(buffer, length);
 
+        _context->update_sub_texture(_test_texture, 
+                                     scm::gl::texture_region( scm::math::vec3ui(0, 0, 0),
+                                                                               scm::math::vec3ui(256,256, 1)),
+                                      0,
+                                      scm::gl::FORMAT_RGBA_8,
+                                      &buffer[256*256*4*4]
+                                    );
+
+        std::ofstream myfile;
+        myfile.open("Untitled.data", std::ios::binary);
+        myfile.write(buffer, length);
+        myfile.close();
+
 		is.close();
 
 		//print content
-		//std::cout.write(buffer, length);
+		std::cout.write(buffer, length);
 
 		delete[] buffer; 
 	}
@@ -549,8 +578,9 @@ int main(int argc, char **argv)
 {
     scm::shared_ptr<scm::core>      scm_core(new scm::core(argc, argv));
     _application.reset(new demo_app());
-    setset(4);
-    tileloader();
+    setset(0);
+    setset(21);
+
 
     // the stuff that has to be done
     glutInit(&argc, argv);
@@ -578,6 +608,7 @@ int main(int argc, char **argv)
     glutMotionFunc(glut_mousemotion);
     glutIdleFunc(glut_idle);
 
+    tileloader();
     // and finally start the event loop
     glutMainLoop();
 
