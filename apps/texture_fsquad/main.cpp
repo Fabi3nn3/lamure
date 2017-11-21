@@ -20,6 +20,8 @@
 #include <scm/gl_util/primitives/wavefront_obj.h>
 
 // Window library
+#include <GL/glew.h>
+#include <GLFW/glfw3.h>
 #include <GL/freeglut.h>
 
 // window sizes
