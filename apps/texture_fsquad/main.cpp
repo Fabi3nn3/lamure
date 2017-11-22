@@ -67,8 +67,9 @@ public:
     void mousefunc(int button, int state, int x, int y);
     void mousemotion(int x, int y);
     void keyboard(unsigned char key, int x, int y);
-    void tileloader();
-    void setset();
+    void calc_x_and_y_offset_id(unsigned & x_offset_id, unsigned &  y_offset_id, unsigned const& on_id_local_child_id );
+    void tileloader(int tree_level);
+    //void setset();
 
 private:
     //trackball -> mouse and x+y coord.
@@ -258,7 +259,9 @@ demo_app::initialize()
     _framebuffer           = _device->create_frame_buffer();
     _framebuffer->attach_color_buffer(0, _color_buffer);
     _framebuffer->attach_depth_stencil_buffer(_depth_buffer);
-    _test_texture          = _device->create_texture_2d(vec2ui(256, 256) * 1, FORMAT_RGBA_8);//hardcode
+  	//_test_texture          = _device->create_texture_2d(vec2ui(256, 256) * 1, FORMAT_RGBA_8);//level 0
+    _test_texture          = _device->create_texture_2d(vec2ui(512, 512) * 1, FORMAT_RGBA_8); //level 1
+    //_test_texture          = _device->create_texture_2d(vec2ui(1024, 1024) * 1, FORMAT_RGBA_8); //level 2
 
 
     _color_buffer_resolved = _device->create_texture_2d(vec2ui(winx, winy) * 1, FORMAT_RGBA_8);
@@ -519,23 +522,55 @@ glut_keyboard(unsigned char key, int x, int y)
     }
 }
 
-void tileloader(){
-	std::ifstream is ("../../apps/texture_fsquad/datatiles/numbered_tiles_w256_h256_t8x8_RGBA8.data", std::ios::binary);
-	//std::ifstream is ("../../apps/texture_fsquad/datatiles/0.data");
+void calc_x_and_y_offset_id(unsigned & x_offset_id, unsigned &  y_offset_id, unsigned const&  on_id_local_child_id ){
 
-    int tile_id_b = vec_set[0];
-    int tile_id_e = vec_set[1];
-    int offsetbeg =(256*256*4)*(tile_id_b);//*8
-    int offsetend =(256*256*4)*(tile_id_e);
-    std::cout << offsetbeg << " & " << offsetend << std::endl;
-    //int offsetend;
+	//x_offset_id = 0x00;
+	//y_offset_id = 0x00;
+
+	int digit_on_id_counter = 0;
+
+	int tmp_id = on_id_local_child_id;
+
+	while(tmp_id != 0){
+
+		int current_front_bit = tmp_id % 2;
+		int write_in_y = digit_on_id_counter % 2;
+		int write_id_in_var = digit_on_id_counter / 2;
+
+		if(write_in_y == 1){
+			y_offset_id = (y_offset_id) | (current_front_bit << write_id_in_var);
+		}
+		else{
+			x_offset_id = (x_offset_id) | (current_front_bit << write_id_in_var);
+		}
+
+		tmp_id = tmp_id >> 1;
+
+		++digit_on_id_counter;
+
+	}
+
+
+}
+
+void tileloader(int tree_level){
+
+	std::cout << "Tree level: " << tree_level << std::endl;
+    int tilesize = 256*256*4;
+
+	std::ifstream is ("../../apps/texture_fsquad/datatiles/numbered_tiles_w256_h256_t8x8_RGBA8.data", std::ios::binary);
+
+	
+	if(tree_level == 1){
+
+    int offsetbeg = tilesize * 1;
+    int offsetend = tilesize * 5;
+
 	if (is) {
 
         is.seekg(offsetend);
         is.seekg(0,is.cur);
         int length = offsetend - offsetbeg;
-        int lengthofdata = (256*256*4)*21;//*8 for bits
-        std::cout << "length: " << length << "length of data: " << lengthofdata << std::endl;
         is.seekg(offsetbeg);
 
 		//allocate memory
@@ -545,42 +580,107 @@ void tileloader(){
 		is.read(buffer, length);
 
         _context->update_sub_texture(_test_texture, 
-                                     scm::gl::texture_region( scm::math::vec3ui(0, 0, 0),
-                                                                               scm::math::vec3ui(256,256, 1)),
+                                     scm::gl::texture_region( scm::math::vec3ui(0, 0, 0), // x_offset_id * 256, y_offset_id*256
+                                                              scm::math::vec3ui(256,256, 1)),
                                       0,
                                       scm::gl::FORMAT_RGBA_8,
-                                      &buffer[256*256*4*4]
+                                      &buffer[tilesize*0]
+                                    );
+        
+        _context->update_sub_texture(_test_texture, 
+                                     scm::gl::texture_region( scm::math::vec3ui(256, 0, 0),
+                                                              scm::math::vec3ui(256,256, 1)),
+                                      0,
+                                      scm::gl::FORMAT_RGBA_8,
+                                      &buffer[tilesize*1]
                                     );
 
-        std::ofstream myfile;
-        myfile.open("Untitled.data", std::ios::binary);
-        myfile.write(buffer, length);
-        myfile.close();
+        _context->update_sub_texture(_test_texture, 
+                                     scm::gl::texture_region( scm::math::vec3ui(0, 256, 0),
+                                                              scm::math::vec3ui(256,256, 1)),
+                                      0,
+                                      scm::gl::FORMAT_RGBA_8,
+                                      &buffer[tilesize*2]
+                                    );
 
-		is.close();
-
-		//print content
-		std::cout.write(buffer, length);
-
+        _context->update_sub_texture(_test_texture, 
+                                     scm::gl::texture_region( scm::math::vec3ui(256, 256, 0),
+                                                              scm::math::vec3ui(256,256, 1)),
+                                      0,
+                                      scm::gl::FORMAT_RGBA_8,
+                                      &buffer[tilesize*3]
+                                    );
 		delete[] buffer; 
+		} 
+	}
+
+	else if(tree_level == 7){
+
+    	int offsetbeg = tilesize *1;
+
+		if (is) {
+
+        	// is.seekg(offsetend);
+        	is.seekg(offsetbeg);
+
+        	int length = 4 * tilesize;
+
+			//allocate memory
+			char * buffer = new char [length];
+
+			//read data as a block
+			is.read(&buffer[0], length);
+
+			//buffer dynamisch anpassen
+        	_context->update_sub_texture(_test_texture, 
+                                     scm::gl::texture_region( scm::math::vec3ui(0,0,0),
+                                                              scm::math::vec3ui(256,256,1)), //same resolution as create texture 
+                                      0,
+                                      scm::gl::FORMAT_RGBA_8,
+                                      &buffer[0]
+                                    );
+			delete[] buffer; 
+
+		}
+
 	}
 	else{
-		std::cout << "no data" <<std::endl;
+
+    	int offsetbeg = tilesize *5;
+
+		if (is) {
+
+        	// is.seekg(offsetend);
+        	is.seekg(offsetbeg);
+
+        	int length = 20 * tilesize;
+
+			//allocate memory
+			char * buffer = new char [length];
+
+			//read data as a block
+			is.read(&buffer[0], length);
+
+			//buffer dynamisch anpassen
+        	_context->update_sub_texture(_test_texture, 
+                                     scm::gl::texture_region( scm::math::vec3ui(0,0,0),
+                                                              scm::math::vec3ui(1024,1024,1)), //same resolution as create texture 
+                                      0,
+                                      scm::gl::FORMAT_RGBA_8,
+                                      &buffer[0]
+                                    );
+			delete[] buffer; 
+
+		}
+
 	}
 }
 
-void setset(int n){
-    vec_set.push_back(n);
-    std::cout << vec_set[0];
-}
 
 int main(int argc, char **argv)
 {
     scm::shared_ptr<scm::core>      scm_core(new scm::core(argc, argv));
     _application.reset(new demo_app());
-    setset(0);
-    setset(21);
-
 
     // the stuff that has to be done
     glutInit(&argc, argv);
@@ -600,6 +700,7 @@ int main(int argc, char **argv)
         return (-1);
     }
 
+ 
     // set the callbacks for resize, draw and idle actions
     glutReshapeFunc(glut_resize);
     glutDisplayFunc(glut_display);
@@ -607,8 +708,9 @@ int main(int argc, char **argv)
     glutMouseFunc(glut_mousefunc);
     glutMotionFunc(glut_mousemotion);
     glutIdleFunc(glut_idle);
-
-    tileloader();
+    //calc_x_and_y_offset_id(0x00, 0x00, tmp);
+    //tileloader(tree_level) && tree_level between 0 - 2
+    tileloader(1);
     // and finally start the event loop
     glutMainLoop();
 
