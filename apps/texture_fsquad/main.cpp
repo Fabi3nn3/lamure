@@ -30,12 +30,9 @@
 #include <GL/freeglut.h>
 //#include <GL/gl3.h>
 
- //window size
-static int winx = 1600;
-static int winy = 1024;
-
- //set of tiles
-std::vector<int> vec_set;
+//window size
+static uint32_t winx = 1600;
+static uint32_t winy = 1024;
 
 scm::shared_ptr<scm::gl::render_context>    _context;
 scm::gl::texture_2d_ptr             _test_texture;
@@ -63,14 +60,14 @@ public:
     }
     virtual ~demo_app();
 
-    bool initialize();
+    bool initialize(uint32_t dim);
     void display();
     void resize(int w, int h);
     void mousefunc(int button, int state, int x, int y);
     void mousemotion(int x, int y);
     void keyboard(unsigned char key, int x, int y);
     void calc_x_and_y_offset_id(unsigned & x_offset_id, unsigned &  y_offset_id, unsigned const& on_id_local_child_id );
-    void tileloader(int tree_level,  unsigned x_offset_id, unsigned y_offset_id);
+    void tileloader(uint32_t beg, uint32_t end);
     //void setset();
 
 private:
@@ -168,7 +165,7 @@ demo_app::~demo_app()
 }
 
 bool
-demo_app::initialize()
+demo_app::initialize(uint32_t dim)
 {
 
     using namespace scm;
@@ -263,7 +260,7 @@ demo_app::initialize()
     _framebuffer->attach_depth_stencil_buffer(_depth_buffer);
   	//_test_texture          = _device->create_texture_2d(vec2ui(256, 256) * 1, FORMAT_RGBA_8);//level 0
     //_test_texture          = _device->create_texture_2d(vec2ui(512, 512) * 1, FORMAT_RGBA_8); //level 1
-    _test_texture          = _device->create_texture_2d(vec2ui(1024, 1024) * 1, FORMAT_RGBA_8); //level 2
+    _test_texture          = _device->create_texture_2d(vec2ui(dim, dim) * 1, FORMAT_RGBA_8); //level 2
 
 
     _color_buffer_resolved = _device->create_texture_2d(vec2ui(winx, winy) * 1, FORMAT_RGBA_8);
@@ -308,7 +305,6 @@ demo_app::initialize()
     return (true);
 }
 
-unsigned plah = 0;
 
 void
 demo_app::display()
@@ -557,7 +553,7 @@ void demo_app::calc_x_and_y_offset_id(unsigned & x_offset_id, unsigned &  y_offs
 }
 
 
-void demo_app::tileloader(int tree_level, unsigned x_offset_id, unsigned y_offset_id){
+void demo_app::tileloader(uint32_t beg, uint32_t end) {
 
     int tilesize = 256*256*4;
 
@@ -565,8 +561,8 @@ void demo_app::tileloader(int tree_level, unsigned x_offset_id, unsigned y_offse
 
     //TODO tileset beginn dynamisch übergeben
 
-    int offsetbeg = tilesize * 5;
-    int offsetend = tilesize * 21;
+    int offsetbeg = tilesize * beg;
+    int offsetend = tilesize * end;
 
 	if (is) {
 
@@ -602,8 +598,14 @@ void demo_app::tileloader(int tree_level, unsigned x_offset_id, unsigned y_offse
 
 int main(int argc, char **argv)
 {
-    scm::shared_ptr<scm::core>      scm_core(new scm::core(argc, argv));
+    scm::shared_ptr<scm::core>      scm_core(new scm::core(1, argv));
     _application.reset(new demo_app());
+
+    auto dim = (uint32_t) atoi(argv[1]);
+    auto beg = (uint32_t) atoi(argv[2]);
+    auto end = (uint32_t) atoi(argv[3]);
+
+
 
     // the stuff that has to be done
     glutInit(&argc, argv);
@@ -618,17 +620,10 @@ int main(int argc, char **argv)
     glutCreateWindow("simple_glut");
 
     // init the GL context
-    if (!_application->initialize()) {
+    if (!_application->initialize(dim)) {
         std::cout << "error initializing gl context" << std::endl;
         return (-1);
     }
-
-    int level = 1;
-    unsigned tmp_x = 0x00;
-    unsigned tmp_y = 0x00;
-    unsigned tmp_id = 3;
-
-    std::cout<< tmp_id << std::endl;
  
     // set the callbacks for resize, draw and idle actions
     glutReshapeFunc(glut_resize);
@@ -637,7 +632,7 @@ int main(int argc, char **argv)
     glutMouseFunc(glut_mousefunc);
     glutMotionFunc(glut_mousemotion);
     glutIdleFunc(glut_idle);
-    _application -> tileloader(1,tmp_x, tmp_y);
+    _application->tileloader(beg, end);
     // and finally start the event loop
     glutMainLoop();
 
