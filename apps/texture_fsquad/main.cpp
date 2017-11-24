@@ -34,13 +34,10 @@
 static uint32_t winx = 800;
 static uint32_t winy = 800;
 
-scm::shared_ptr<scm::gl::render_context>    _context;
-scm::gl::texture_2d_ptr             _test_texture;
+scm::shared_ptr<scm::gl::render_context> _context;
+scm::gl::texture_2d_ptr                  _test_texture;
 
-const scm::math::vec3f position(1, 1, 1);
-
-class demo_app
-{
+class demo_app {
 public:
     demo_app() {
         _initx = 0;
@@ -58,13 +55,15 @@ public:
     virtual ~demo_app();
 
     bool initialize(uint32_t dim);
+    void initialize_texture_2d(uint32_t dim);
     void display();
     void resize(int w, int h);
     void mousefunc(int button, int state, int x, int y);
     void mousemotion(int x, int y);
     void keyboard(unsigned char key, int x, int y);
     void calc_x_and_y_offset_id(unsigned & x_offset_id, unsigned &  y_offset_id, unsigned const& on_id_local_child_id );
-    void tileloader(uint32_t beg, uint32_t end);
+    void tileloader(uint32_t level);
+
     //void setset();
 
 private:
@@ -85,24 +84,24 @@ private:
     float _dolly_sens;
 
     //GraKa Stuff
-    scm::shared_ptr<scm::gl::render_device>     _device;
+    scm::shared_ptr<scm::gl::render_device>          _device;
     //_context
 
-    scm::gl::program_ptr        _shader_program;
+    scm::gl::program_ptr                             _shader_program;
 
-    scm::gl::buffer_ptr         _index_buffer;
-    scm::gl::vertex_array_ptr   _vertex_array;
+    scm::gl::buffer_ptr                              _index_buffer;
+    scm::gl::vertex_array_ptr                        _vertex_array;
 
-    scm::math::mat4f            _projection_matrix;
+    scm::math::mat4f                                 _projection_matrix;
 
-    scm::shared_ptr<scm::gl::box_geometry>  _box;
-    scm::shared_ptr<scm::gl::wavefront_obj_geometry>  _obj;
-    scm::gl::depth_stencil_state_ptr     _dstate_less;
+    scm::shared_ptr<scm::gl::box_geometry>           _box;
+    scm::shared_ptr<scm::gl::wavefront_obj_geometry> _obj;
+    scm::gl::depth_stencil_state_ptr                 _dstate_less;
 
-    scm::gl::sampler_state_ptr          _filter_nearest;
-    scm::gl::sampler_state_ptr          _filter_linear;
+    scm::gl::sampler_state_ptr                       _filter_nearest;
+    scm::gl::sampler_state_ptr                        _filter_linear;
 
-    scm::gl::rasterizer_state_ptr       _ms_no_cull;
+    scm::gl::rasterizer_state_ptr                    _ms_no_cull;
 
 
 }; // class demo_app
@@ -115,8 +114,7 @@ scm::scoped_ptr<demo_app> _application;
 } // namespace
 
 
-demo_app::~demo_app()
-{
+demo_app::~demo_app() {
     _shader_program.reset();
     _index_buffer.reset();
     _vertex_array.reset();
@@ -133,10 +131,7 @@ demo_app::~demo_app()
     _device.reset();
 }
 
-bool
-demo_app::initialize(uint32_t dim)
-{
-
+bool demo_app::initialize(uint32_t dim) {
     using namespace scm;
     using namespace scm::gl;
     using namespace scm::math;
@@ -162,16 +157,14 @@ demo_app::initialize(uint32_t dim)
         return (false);
     }
 
-
     _dstate_less    = _device->create_depth_stencil_state(true, true, COMPARISON_LESS);
-
 
     _obj.reset(new wavefront_obj_geometry(_device, "../../apps/texture_fsquad/geometry/quad.obj"));
     _filter_nearest = _device->create_sampler_state(FILTER_MIN_MAG_NEAREST, WRAP_CLAMP_TO_EDGE);
     _filter_linear  = _device->create_sampler_state(FILTER_MIN_MAG_LINEAR, WRAP_CLAMP_TO_EDGE);
 
 
-    _test_texture          = _device->create_texture_2d(vec2ui(dim, dim) * 1, FORMAT_RGBA_8); //level 2
+    _test_texture = _device->create_texture_2d(vec2ui(dim, dim) * 1, FORMAT_RGBA_8); //level 2
 
     _ms_no_cull = _device->create_rasterizer_state(FILL_SOLID, CULL_NONE, ORIENT_CCW, true);
 
@@ -181,9 +174,7 @@ demo_app::initialize(uint32_t dim)
 }
 
 
-void
-demo_app::display()
-{
+void demo_app::display() {
     using namespace scm::gl;
     using namespace scm::math;
 
@@ -226,25 +217,18 @@ demo_app::display()
         //bind our texture and tell the graphics card to filter the samples linearly
         _context->bind_texture(_test_texture, _filter_nearest,   0);
         //bind our texture and tell the graphics card to not filter the samples
-        _context->bind_texture(_test_texture, _filter_nearest, 1);
+        _context->bind_texture(_test_texture, _filter_linear, 1);
 
         _obj->draw(_context, geometry::MODE_SOLID);
     }
 
-
-
-
     _context->reset();
-
-
 
     // swap the back and front buffer, so that the drawn stuff can be seen
     glutSwapBuffers();
 }
 
-void
-demo_app::resize(int w, int h)
-{
+void demo_app::resize(int w, int h) {
     // safe the new dimensions
     winx = w;
     winy = h;
@@ -258,12 +242,10 @@ demo_app::resize(int w, int h)
     scm::math::perspective_matrix(_projection_matrix, 60.f, float(w)/float(h), 0.01f, 1000.0f);
 }
 
-//linke Maustaste: Left Button Down prüfen -> wenn ja, dann rotate
-//rechte Maustase: right button down -> wenn ja, zoom in
-//mausrad: middle button -> wenn ja, translate
-void
-demo_app::mousefunc(int button, int state, int x, int y)
-{
+// linke Maustaste: Left Button Down prüfen -> wenn ja, dann rotate
+// rechte Maustase: right button down -> wenn ja, zoom in
+// mausrad: middle button -> wenn ja, translate
+void demo_app::mousefunc(int button, int state, int x, int y) {
     switch (button) {
         case GLUT_LEFT_BUTTON:
             {
@@ -283,13 +265,9 @@ demo_app::mousefunc(int button, int state, int x, int y)
     _inity = 2.f * float(winy - y - (winy/2))/float(winy);
 }
 
-void
-demo_app::mousemotion(int x, int y)
-{
+void demo_app::mousemotion(int x, int y) {
     float nx = 2.f * float(x - (winx/2))/float(winx);
     float ny = 2.f * float(winy - y - (winy/2))/float(winy);
-
-    //std::cout << "nx " << nx << " ny " << ny << std::endl;
 
     if (_lb_down) {
         _trackball_manip.rotation(_initx, _inity, nx, ny);
@@ -305,80 +283,74 @@ demo_app::mousemotion(int x, int y)
     _initx = nx;
 }
 
-void
-demo_app::keyboard(unsigned char key, int x, int y)
-{
+void demo_app::keyboard(unsigned char key, int x, int y) {
 }
 
-void
-glut_display()
-{
+void glut_display() {
     if (_application)
         _application->display();
-
 }
 
-void
-glut_resize(int w, int h)
-{
+void glut_resize(int w, int h) {
     if (_application)
         _application->resize(w, h);
 }
 
-void
-glut_mousefunc(int button, int state, int x, int y)
-{
+void glut_mousefunc(int button, int state, int x, int y) {
     if (_application)
         _application->mousefunc(button, state, x, y);
 }
 
-void
-glut_mousemotion(int x, int y)
-{
+void glut_mousemotion(int x, int y) {
     if (_application)
         _application->mousemotion(x, y);
 }
 
-void
-glut_idle()
-{
+void glut_idle() {
     glutPostRedisplay();
 }
 
-void
-glut_keyboard(unsigned char key, int x, int y)
-{
+void glut_keyboard(unsigned char key, int x, int y) {
     switch (key) {
         // ESC key
-        case 27: {
+        case 27:
             _application.reset();
             std::cout << "reset application" << std::endl;
             exit (0);
-                 }
-            break;
         case 'f':
             glutFullScreenToggle();
+            break;
+        case '0':
+            _application -> initialize_texture_2d(256);
+            _application -> tileloader(0);
+            break;
+        case '1':
+            _application -> initialize_texture_2d(512);
+            _application -> tileloader(1);
+            break;
+        case '2':
+            _application -> initialize_texture_2d(1024);
+            _application -> tileloader(2);
+            break;
+        case '3':
+            // TODO say tileloader or any other interface to load tiles #1 #2 #3 #17 #18 #19 #20
             break;
         default:
             _application->keyboard(key, x, y);
     }
 }
 
-void demo_app::calc_x_and_y_offset_id(unsigned & x_offset_id, unsigned &  y_offset_id, unsigned const&  on_id_local_child_id ){
-
-	//x_offset_id = 0x00;
-	//y_offset_id = 0x00;
-
+void demo_app::calc_x_and_y_offset_id(unsigned & x_offset_id,
+                                      unsigned & y_offset_id,
+                                      unsigned const& on_id_local_child_id){
 	int digit_on_id_counter = 0;
-
 
 	int tmp_id = on_id_local_child_id;
 
 	while(tmp_id != 0){
-
 		int current_front_bit = tmp_id % 2;
-		int write_in_y = digit_on_id_counter % 2;
-		int write_id_in_var = digit_on_id_counter / 2;
+		int write_in_y        = digit_on_id_counter % 2;
+		int write_id_in_var   = digit_on_id_counter / 2;
 
 		if(write_in_y == 1){
 			y_offset_id = (y_offset_id) | (current_front_bit << write_id_in_var);
@@ -390,43 +362,48 @@ void demo_app::calc_x_and_y_offset_id(unsigned & x_offset_id, unsigned &  y_offs
 		tmp_id = tmp_id >> 1;
 
 		++digit_on_id_counter;
-
 	}
-
-
 }
 
 
-void demo_app::tileloader(uint32_t beg, uint32_t end) {
-
+void demo_app::tileloader(uint32_t level) {
     int tilesize = 256*256*4;
 
 	std::ifstream is ("../../apps/texture_fsquad/datatiles/numbered_tiles_w256_h256_t8x8_RGBA8.data", std::ios::binary);
 
     //TODO tileset beginn dynamisch übergeben
 
-    int offsetbeg = tilesize * beg;
+    // calulate begin and end depending on the LOD
+    double tiles_per_level = pow(4, level);
+    double begin = 0;
+
+    for (int i = 0; i < level; ++i) {
+        begin += pow(4, i);
+    }
+
+    double end = begin + tiles_per_level;
+
+    int offsetbeg = tilesize * begin;
     int offsetend = tilesize * end;
 
 	if (is) {
-
         is.seekg(offsetend);
         is.seekg(0,is.cur);
         int length = offsetend - offsetbeg;
         is.seekg(offsetbeg);
 
         //allocate memory
-        char * buffer = new char [length];
+        auto* buffer = new char [length];
 
         //read data as a block
         is.read(buffer, length);
 
-        for (unsigned j = 0; j < 16; ++j) {
+        for (unsigned j = 0; j < pow(4, level); ++j) {
             unsigned offset_x = 0;
             unsigned offset_y = 0;
             calc_x_and_y_offset_id(offset_x, offset_y, j);
             _context->update_sub_texture(_test_texture,
-                             scm::gl::texture_region( scm::math::vec3ui(offset_x*256, offset_y*256, 0), // x_offset_id * 256, y_offset_id*256
+                             scm::gl::texture_region( scm::math::vec3ui(offset_x*256, offset_y*256, 0),
                              scm::math::vec3ui(256,256, 1)),
                              0,
                              scm::gl::FORMAT_RGBA_8,
@@ -435,21 +412,23 @@ void demo_app::tileloader(uint32_t beg, uint32_t end) {
         }
 
 		delete[] buffer;
-		};
+    };
+}
 
+void demo_app::initialize_texture_2d(uint32_t dim) {
+    using namespace scm::gl;
+    using namespace scm::math;
+    _test_texture = _device->create_texture_2d(vec2ui(dim, dim) * 1, FORMAT_RGBA_8); //level 2
 }
 
 
-int main(int argc, char **argv)
-{
-    scm::shared_ptr<scm::core>      scm_core(new scm::core(1, argv));
+int main(int argc, char **argv) {
+    scm::shared_ptr<scm::core> scm_core(new scm::core(1, argv));
     _application.reset(new demo_app());
 
     auto dim = (uint32_t) atoi(argv[1]);
-    auto beg = (uint32_t) atoi(argv[2]);
-    auto end = (uint32_t) atoi(argv[3]);
-
-
+//    auto beg = (uint32_t) atoi(argv[2]);
+//    auto end = (uint32_t) atoi(argv[3]);
 
     // the stuff that has to be done
     glutInit(&argc, argv);
@@ -476,7 +455,8 @@ int main(int argc, char **argv)
     glutMouseFunc(glut_mousefunc);
     glutMotionFunc(glut_mousemotion);
     glutIdleFunc(glut_idle);
-    _application->tileloader(beg, end);
+    _application->tileloader(0);
+
     // and finally start the event loop
     glutMainLoop();
 
