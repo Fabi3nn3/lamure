@@ -35,7 +35,9 @@ static uint32_t winx = 800;
 static uint32_t winy = 800;
 
 scm::shared_ptr<scm::gl::render_context> _context;
-scm::gl::texture_2d_ptr                  _test_texture;
+scm::gl::texture_2d_ptr                  _physical_texture;
+scm::gl::texture_2d_ptr                  _index_texture;
+
 
 class demo_app {
 public:
@@ -63,8 +65,9 @@ public:
     void keyboard(unsigned char key, int x, int y);
     void calc_x_and_y_offset_id(unsigned & x_offset_id, unsigned &  y_offset_id, unsigned const& on_id_local_child_id );
     void tileloader(uint32_t level);
-
-    //void setset();
+    void intitialize_index_texture();
+    void update_entire_texture(const std::vector<uint8_t> &cpu_buffer);
+    void physical_texture_test_layout();
 
 private:
     //trackball -> mouse and x+y coord.
@@ -164,7 +167,8 @@ bool demo_app::initialize(uint32_t dim) {
     _filter_linear  = _device->create_sampler_state(FILTER_MIN_MAG_LINEAR, WRAP_CLAMP_TO_EDGE);
 
 
-    _test_texture = _device->create_texture_2d(vec2ui(dim, dim) * 1, FORMAT_RGBA_8); //level 2
+    _physical_texture = _device->create_texture_2d(vec2ui(dim, dim) * 1, FORMAT_RGBA_8); //level 2
+    _index_texture = _device->create_texture_2d(vec2ui(4,4), FORMAT_RGB_8UI);
 
     _ms_no_cull = _device->create_rasterizer_state(FILL_SOLID, CULL_NONE, ORIENT_CCW, true);
 
@@ -215,9 +219,9 @@ void demo_app::display() {
         _context->bind_program(_shader_program);
 
         //bind our texture and tell the graphics card to filter the samples linearly
-        _context->bind_texture(_test_texture, _filter_nearest,   0);
+        _context->bind_texture(_physical_texture, _filter_nearest,   0);
         //bind our texture and tell the graphics card to not filter the samples
-        _context->bind_texture(_test_texture, _filter_linear, 1);
+        _context->bind_texture(_physical_texture, _filter_linear, 1);
 
         _obj->draw(_context, geometry::MODE_SOLID);
     }
@@ -333,6 +337,8 @@ void glut_keyboard(unsigned char key, int x, int y) {
             _application -> tileloader(2);
             break;
         case '3':
+            _application -> initialize_texture_2d(2816);
+            _application -> physical_texture_test_layout();
             // TODO say tileloader or any other interface to load tiles #1 #2 #3 #17 #18 #19 #20
             break;
         default:
@@ -402,7 +408,7 @@ void demo_app::tileloader(uint32_t level) {
             unsigned offset_x = 0;
             unsigned offset_y = 0;
             calc_x_and_y_offset_id(offset_x, offset_y, j);
-            _context->update_sub_texture(_test_texture,
+            _context->update_sub_texture(_physical_texture,
                              scm::gl::texture_region( scm::math::vec3ui(offset_x*256, offset_y*256, 0),
                              scm::math::vec3ui(256,256, 1)),
                              0,
@@ -415,14 +421,83 @@ void demo_app::tileloader(uint32_t level) {
     };
 }
 
+void demo_app::physical_texture_test_layout() {
+    int tilesize = 256*256*4;
+
+    std::ifstream is ("../../apps/texture_fsquad/datatiles/numbered_tiles_w256_h256_t8x8_RGBA8.data", std::ios::binary);
+
+    int offsetbeg = tilesize * 0;
+    int offsetend = tilesize * 21;
+
+    if (is) {
+        is.seekg(offsetend);
+        is.seekg(0,is.cur);
+        int length = offsetend - offsetbeg;
+        is.seekg(offsetbeg);
+
+        //allocate memory
+        auto* buffer = new char [length];
+
+        //read data as a block
+        is.read(buffer, length);
+
+        for (unsigned j = 0; j < 22; ++j) {
+            unsigned offset_x = 0;
+            unsigned offset_y = 0;
+
+            _context->update_sub_texture(_physical_texture,
+                                         scm::gl::texture_region( scm::math::vec3ui(offset_x*256, offset_y*256, 0),
+                                                                  scm::math::vec3ui(2816,512, 1)),
+                                         0,
+                                         scm::gl::FORMAT_RGBA_8,
+                                         &buffer[tilesize*j]
+            );
+            offset_x++;
+            offset_y++;
+        }
+
+        delete[] buffer;
+    };
+}
+
 void demo_app::initialize_texture_2d(uint32_t dim) {
     using namespace scm::gl;
     using namespace scm::math;
-    _test_texture = _device->create_texture_2d(vec2ui(dim, dim) * 1, FORMAT_RGBA_8); //level 2
+    _physical_texture = _device->create_texture_2d(vec2ui(dim, dim) * 1, FORMAT_RGBA_8); //level 2
 }
 
 
+void demo_app::update_entire_texture(std::vector<uint8_t> const& cpu_buffer){
+
+    _context->update_sub_texture(_index_texture,
+                                 scm::gl::texture_region( scm::math::vec3ui(0, 0, 0),
+                                                          scm::math::vec3ui(4,4, 1)),
+                                 0,
+                                 scm::gl::FORMAT_RGB_8UI,
+                                 &cpu_buffer[0] );
+}
+
+void demo_app::intitialize_index_texture(){
+    using namespace scm::gl;
+    using namespace scm::math;
+    int img_size = 16*3;
+    _index_texture = _device->create_texture_2d(vec2ui(4,4), FORMAT_RGB_8UI);
+    //auto* index_buffer = new uint8_t [img_size];
+
+    // create img_size elements in vector with value 0
+    std::vector<uint8_t> cpu_index_buffer(img_size, 0);
+
+}
+
+
+
+
 int main(int argc, char **argv) {
+    std::vector<uint8_t> cpu_idx_texture_buffer_state_1 = {1, 0, 1, 1, 0, 1, 2, 0, 1, 2, 0, 1,
+                                                           1, 0, 1, 1, 0, 1, 2, 0, 1, 2, 0, 1,
+                                                           3, 0, 1, 3, 0, 1, 4, 0, 1, 4, 0, 1,
+                                                           3, 0, 1, 3, 0, 1, 4, 0, 1, 4, 0, 1};
+
     scm::shared_ptr<scm::core> scm_core(new scm::core(1, argv));
     _application.reset(new demo_app());
 
@@ -456,6 +531,8 @@ int main(int argc, char **argv) {
     glutMotionFunc(glut_mousemotion);
     glutIdleFunc(glut_idle);
     _application->tileloader(0);
+    _application -> intitialize_index_texture();
+    _application -> update_entire_texture(cpu_idx_texture_buffer_state_1);
 
     // and finally start the event loop
     glutMainLoop();
