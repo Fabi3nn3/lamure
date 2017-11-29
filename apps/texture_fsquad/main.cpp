@@ -56,7 +56,8 @@ public:
     }
     virtual ~demo_app();
 
-    bool initialize(uint32_t dim);
+    bool initialize(uint32_t tile_size, uint32_t max_quadtree_level, uint32_t index_texture_size,
+                    uint32_t physical_texture_size);
     void initialize_physical_texture();
     void display();
     void resize(int w, int h);
@@ -70,6 +71,11 @@ public:
     void physical_texture_test_layout();
 
 private:
+    uint32_t tile_size;
+    uint32_t max_quadtree_level;
+    uint32_t index_texture_size;
+    uint32_t physical_texture_size;
+
     //trackball -> mouse and x+y coord.
     scm::gl::trackball_manipulator _trackball_manip;
     float _initx;
@@ -79,9 +85,6 @@ private:
     bool _lb_down;
     bool _mb_down;
     bool _rb_down;
-
-    //set of tiles
-    std::vector<int> vec_set;
 
     //intensity of zoom
     float _dolly_sens;
@@ -102,13 +105,15 @@ private:
     scm::gl::depth_stencil_state_ptr                 _dstate_less;
 
     scm::gl::sampler_state_ptr                       _filter_nearest;
-    scm::gl::sampler_state_ptr                        _filter_linear;
+    scm::gl::sampler_state_ptr                       _filter_linear;
 
     scm::gl::rasterizer_state_ptr                    _ms_no_cull;
 
 
 }; // class demo_app
 
+
+void parse_arguments(char **argv);
 
 namespace  {
 
@@ -134,11 +139,17 @@ demo_app::~demo_app() {
     _device.reset();
 }
 
-bool demo_app::initialize(uint32_t dim) {
+bool demo_app::initialize(uint32_t tile_size, uint32_t max_quadtree_level, uint32_t index_texture_size,
+                          uint32_t physical_texture_size) {
     using namespace scm;
     using namespace scm::gl;
     using namespace scm::math;
     using boost::assign::list_of;
+
+    this -> tile_size = tile_size;
+    this -> max_quadtree_level = max_quadtree_level;
+    this -> index_texture_size = index_texture_size;
+    this -> physical_texture_size = physical_texture_size;
 
     std::string vs_source;
     std::string fs_source;
@@ -199,10 +210,6 @@ void demo_app::display() {
     _shader_program->uniform("projection_matrix", _projection_matrix);
     _shader_program->uniform("model_view_matrix", model_view_matrix);
     _shader_program->uniform("model_view_matrix_inverse_transpose", mv_inv_transpose);
-    _shader_program->uniform("color_texture_linear", 0);
-    _shader_program->uniform("color_texture_nearest", 1);
-
-
 
     _context->clear_default_color_buffer(FRAMEBUFFER_BACK, vec4f(.2f, .2f, .2f, 1.0f));
     _context->clear_default_depth_stencil_buffer();
@@ -224,12 +231,9 @@ void demo_app::display() {
         _context->bind_program(_shader_program);
 
         //bind our texture and tell the graphics card to filter the samples linearly
-        _context->bind_texture(_physical_texture, _filter_nearest,   0);
-        //bind our texture and tell the graphics card to not filter the samples
         // TODO physical texture later with linear filter
-        //_context->bind_texture(_physical_texture, _filter_linear, 1);
-
-        _context->bind_texture(_index_texture, _filter_nearest,   1);
+        _context->bind_texture(_physical_texture, _filter_nearest, 0);
+        _context->bind_texture(_index_texture,    _filter_nearest, 1);
 
         _obj->draw(_context, geometry::MODE_SOLID);
     }
@@ -323,6 +327,7 @@ void glut_idle() {
 }
 
 void glut_keyboard(unsigned char key, int x, int y) {
+    std::vector<uint8_t> cpu_idx_texture_buffer_state;
     switch (key) {
         // ESC key
         case 27:
@@ -333,21 +338,29 @@ void glut_keyboard(unsigned char key, int x, int y) {
             glutFullScreenToggle();
             break;
         case '0':
-//            _application->initialize_physical_texture(256);
-            _application -> tileloader(0);
+            cpu_idx_texture_buffer_state = std::vector<uint8_t>(16*3, 0);
+            _application -> update_index_texture(cpu_idx_texture_buffer_state);
             break;
         case '1':
-//            _application->initialize_physical_texture(512);
-            _application -> tileloader(1);
+            cpu_idx_texture_buffer_state = {1, 0, 1, 1, 0, 1, 2, 0, 1, 2, 0, 1,
+                                            1, 0, 1, 1, 0, 1, 2, 0, 1, 2, 0, 1,
+                                            3, 0, 1, 3, 0, 1, 4, 0, 1, 4, 0, 1,
+                                            3, 0, 1, 3, 0, 1, 4, 0, 1, 4, 0, 1};
+            _application -> update_index_texture(cpu_idx_texture_buffer_state);
             break;
         case '2':
-//            _application->initialize_physical_texture(1024);
-            _application -> tileloader(2);
+            cpu_idx_texture_buffer_state = {5, 0, 2, 6, 0, 2, 2, 1, 2, 3, 1, 2,
+                                            0, 1, 2, 1, 1, 2, 4, 1, 2, 5, 1, 2,
+                                            6, 1, 2, 0, 2, 2, 3, 2, 2, 4, 2, 2,
+                                            1, 2, 2, 2, 2, 2, 5, 2, 2, 6, 2, 2};
+            _application -> update_index_texture(cpu_idx_texture_buffer_state);
             break;
         case '3':
-            _application->initialize_physical_texture();
-            _application -> physical_texture_test_layout();
-            // TODO say tileloader or any other interface to load tiles #1 #2 #3 #17 #18 #19 #20
+            cpu_idx_texture_buffer_state = {1, 0, 1, 1, 0, 1, 2, 0, 1, 2, 0, 1,
+                                            1, 0, 1, 1, 0, 1, 2, 0, 1, 2, 0, 1,
+                                            3, 0, 1, 3, 0, 1, 3, 2, 2, 4, 2, 2,
+                                            3, 0, 1, 3, 0, 1, 5, 2, 2, 6, 2, 2};
+            _application -> update_index_texture(cpu_idx_texture_buffer_state);
             break;
         default:
             _application->keyboard(key, x, y);
@@ -492,25 +505,35 @@ void demo_app::initialize_index_texture(){
 
     // create img_size elements in vector with value 0
     std::vector<uint8_t> cpu_index_buffer(img_size, 0);
-
     update_index_texture(cpu_index_buffer);
 }
 
-
-
-
+/**
+ * Initialize and run application.
+ * Commandline arguments in this order:
+ *   <tile_size>             // Size of a tile in pixel (width and height are equal)
+ *   <max_quadtree_level>    // Number of the leaf level of the quadtree
+ *   <index_texture_size>    // Size of max(leaf_tiles_in_x, leaf_tiles_in_y). Index texture is quadratic.
+ *   <physical_texture_size> // Size of the physical texture in MB (application will determine the optimal number of tiles per row and column)
+ * @param argc
+ * @param argv
+ * @return
+ */
 int main(int argc, char **argv) {
-    std::vector<uint8_t> cpu_idx_texture_buffer_state_1 = {1, 0, 1, 1, 0, 1, 2, 0, 1, 2, 0, 1,
-                                                           1, 0, 1, 1, 0, 1, 2, 0, 1, 2, 0, 1,
-                                                           3, 0, 1, 3, 0, 1, 4, 0, 1, 4, 0, 1,
-                                                           3, 0, 1, 3, 0, 1, 4, 0, 1, 4, 0, 1};
-
     scm::shared_ptr<scm::core> scm_core(new scm::core(1, argv));
     _application.reset(new demo_app());
 
-    auto dim = (uint32_t) atoi(argv[1]);
-//    auto beg = (uint32_t) atoi(argv[2]);
-//    auto end = (uint32_t) atoi(argv[3]);
+    if (argc != 5) {
+        return 0;
+    }
+
+    // parse command line arguments
+    uint32_t tile_size, max_quadtree_level, index_texture_size, physical_texture_size;
+
+    tile_size             = atoi(argv[1]);
+    max_quadtree_level    = atoi(argv[2]);
+    index_texture_size    = atoi(argv[3]);
+    physical_texture_size = atoi(argv[4]);
 
     // the stuff that has to be done
     glutInit(&argc, argv);
@@ -525,7 +548,7 @@ int main(int argc, char **argv) {
     glutCreateWindow("simple_glut");
 
     // init the GL context
-    if (!_application->initialize(dim)) {
+    if (!_application->initialize(tile_size, max_quadtree_level, index_texture_size, physical_texture_size)) {
         std::cout << "error initializing gl context" << std::endl;
         return (-1);
     }
@@ -538,12 +561,7 @@ int main(int argc, char **argv) {
     glutMotionFunc(glut_mousemotion);
     glutIdleFunc(glut_idle);
 
-//    _application->tileloader(0);
-//    _application->initialize_index_texture();
-//    _application->update_index_texture(cpu_idx_texture_buffer_state_1);
-
     // and finally start the event loop
     glutMainLoop();
-
     return (0);
 }

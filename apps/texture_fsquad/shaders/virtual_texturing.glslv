@@ -1,7 +1,4 @@
-// Copyright (c) 2012 Christopher Lux <christopherlux@gmail.com>
-// Distributed under the Modified BSD License, see license.txt.
-
-#version 330 core
+#version 420 core
 
 out vec2 texture_coord;
 
@@ -12,9 +9,7 @@ layout(location = 0) in vec3 in_position;
 layout(location = 1) in vec3 in_normal;
 layout(location = 2) in vec2 in_texture_coord;
 
-void main()
-{
+void main() {
     texture_coord = in_texture_coord;
-
     gl_Position = /*projection_matrix * model_view_matrix **/ vec4(in_position, 1.0);
 }

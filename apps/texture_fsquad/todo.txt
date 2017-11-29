@@ -1,0 +1,13 @@
+- fragment shader für uns kommentieren
+- eindeutige Variablennamen
+- Konstanten durch uniforms im shader ersetzen
+- durchwechseln durch die 3 States über Tastenkombination --> erledigt
+- Kommandozeilenparameter für index_texture size (vorsicht square)
+- physical texture size als Kommandozeilenparameter in MB
+  => calculate best fit for phyiscal_texture size (width and height)
+  => how many tiles per row and column
+- per Knopfdruck: toggle zwischen physical texture visualisierung & image viewer
+- Interface mit Anton abklären
+- upload physical texture in function blockwise (given a COU block & offset in physical texture)
+- remove hard coded values everywhere (except for window size)
+- Padding im Shader später beachten
