@@ -71,10 +71,11 @@ public:
     void physical_texture_test_layout();
 
 private:
-    uint32_t tile_size;
-    uint32_t max_quadtree_level;
-    uint32_t index_texture_size;
-    uint32_t physical_texture_size;
+    uint32_t _tile_size;
+    uint32_t _max_quadtree_level;
+
+    scm::math::vec2ui _index_texture_dimension;
+    scm::math::vec2ui _physical_texture_dimension;
 
     //trackball -> mouse and x+y coord.
     scm::gl::trackball_manipulator _trackball_manip;
@@ -100,7 +101,6 @@ private:
 
     scm::math::mat4f                                 _projection_matrix;
 
-    scm::shared_ptr<scm::gl::box_geometry>           _box;
     scm::shared_ptr<scm::gl::wavefront_obj_geometry> _obj;
     scm::gl::depth_stencil_state_ptr                 _dstate_less;
 
@@ -110,10 +110,8 @@ private:
     scm::gl::rasterizer_state_ptr                    _ms_no_cull;
 
 
+    void calculate_best_physical_texture_size(uint32_t size_in_mb);
 }; // class demo_app
-
-
-void parse_arguments(char **argv);
 
 namespace  {
 
@@ -127,7 +125,6 @@ demo_app::~demo_app() {
     _index_buffer.reset();
     _vertex_array.reset();
 
-    _box.reset();
     _obj.reset();
 
     _filter_nearest.reset();
@@ -139,18 +136,22 @@ demo_app::~demo_app() {
     _device.reset();
 }
 
-bool demo_app::initialize(uint32_t tile_size, uint32_t max_quadtree_level, uint32_t index_texture_size,
+bool demo_app::initialize(uint32_t tile_size,
+                          uint32_t max_quadtree_level,
+                          uint32_t index_texture_size,
                           uint32_t physical_texture_size) {
     using namespace scm;
     using namespace scm::gl;
     using namespace scm::math;
     using boost::assign::list_of;
 
-    this -> tile_size = tile_size;
-    this -> max_quadtree_level = max_quadtree_level;
-    this -> index_texture_size = index_texture_size;
-    this -> physical_texture_size = physical_texture_size;
+    this -> _tile_size = tile_size;
+    this -> _max_quadtree_level = max_quadtree_level;
+    this -> _index_texture_dimension = scm::math::vec2ui(index_texture_size, index_texture_size);
 
+    calculate_best_physical_texture_size(physical_texture_size);
+
+    // Load shader programs from file
     std::string vs_source;
     std::string fs_source;
 
@@ -180,7 +181,6 @@ bool demo_app::initialize(uint32_t tile_size, uint32_t max_quadtree_level, uint3
 
     // TODO: define phyiscal texture size,as huge as possible
     initialize_physical_texture();
-    //_physical_texture = _device->create_texture_2d(vec2ui(dim, dim) * 1, FORMAT_RGBA_8);
     // TODO: define index texture size, tile space of vt
     initialize_index_texture();
 
@@ -210,6 +210,11 @@ void demo_app::display() {
     _shader_program->uniform("projection_matrix", _projection_matrix);
     _shader_program->uniform("model_view_matrix", model_view_matrix);
     _shader_program->uniform("model_view_matrix_inverse_transpose", mv_inv_transpose);
+
+    // upload necessary information to vertex shader
+    _shader_program->uniform("in_physical_texture_dim", _physical_texture_dimension);
+    _shader_program->uniform("in_index_texture_dim", _index_texture_dimension);
+    _shader_program->uniform("in_max_level", _max_quadtree_level);
 
     _context->clear_default_color_buffer(FRAMEBUFFER_BACK, vec4f(.2f, .2f, .2f, 1.0f));
     _context->clear_default_depth_stencil_buffer();
@@ -443,18 +448,15 @@ void demo_app::tileloader(uint32_t level) {
 }
 
 void demo_app::physical_texture_test_layout() {
-    int tilesize = 256*256*4;
+    int tilesize = _tile_size * _tile_size * 4;
 
     std::ifstream is ("../../apps/texture_fsquad/datatiles/numbered_tiles_w256_h256_t8x8_RGBA8.data", std::ios::binary);
 
-    int offsetbeg = tilesize * 0;
-    int offsetend = tilesize * 21;
+    int offset_beg = 0;
+    int offset_end = tilesize * _physical_texture_dimension.x * _physical_texture_dimension.y;
 
     if (is) {
-        is.seekg(offsetend);
-        is.seekg(0,is.cur);
-        int length = offsetend - offsetbeg;
-        is.seekg(offsetbeg);
+        int length = offset_end - offset_beg;
 
         //allocate memory
         auto* buffer = new char [length];
@@ -462,16 +464,16 @@ void demo_app::physical_texture_test_layout() {
         //read data as a block
         is.read(buffer, length);
         int counter = 0;
-        for (unsigned k = 0; k < 3 ; ++k) {
-            for (unsigned j = 0; j < 7; ++j) {
+        for (unsigned y = 0; y < _physical_texture_dimension.y ; ++y) {
+            for (unsigned x = 0; x < _physical_texture_dimension.x; ++x) {
                 _context->update_sub_texture(_physical_texture,
-                                             scm::gl::texture_region( scm::math::vec3ui(j*256, k*256, 0),
-                                                                      scm::math::vec3ui(256,256, 1)),
+                                             scm::gl::texture_region(scm::math::vec3ui(x*_tile_size, y*_tile_size, 0),
+                                                                     scm::math::vec3ui(_tile_size,_tile_size, 1)),
                                              0,
                                              scm::gl::FORMAT_RGBA_8,
                                              &buffer[counter]
                 );
-                counter+=tilesize;
+                counter += tilesize;
             }
         }
 
@@ -482,16 +484,15 @@ void demo_app::physical_texture_test_layout() {
 void demo_app::initialize_physical_texture() {
     using namespace scm::gl;
     using namespace scm::math;
-    _physical_texture = _device->create_texture_2d(vec2ui(7*256, 3*256) , FORMAT_RGBA_8);
+    _physical_texture = _device->create_texture_2d(_physical_texture_dimension * _tile_size, FORMAT_RGBA_8);
     physical_texture_test_layout();
 }
 
 
 void demo_app::update_index_texture(std::vector<uint8_t> const &cpu_buffer){
-
     _context->update_sub_texture(_index_texture,
-                                 scm::gl::texture_region( scm::math::vec3ui(0, 0, 0),
-                                                          scm::math::vec3ui(4,4, 1)),
+                                 scm::gl::texture_region(scm::math::vec3ui(0, 0, 0),
+                                                         scm::math::vec3ui(_index_texture_dimension, 1)),
                                  0,
                                  scm::gl::FORMAT_RGB_8UI,
                                  &cpu_buffer[0] );
@@ -500,12 +501,17 @@ void demo_app::update_index_texture(std::vector<uint8_t> const &cpu_buffer){
 void demo_app::initialize_index_texture(){
     using namespace scm::gl;
     using namespace scm::math;
-    int img_size = 16*3;
-    _index_texture = _device->create_texture_2d(vec2ui(4,4), FORMAT_RGB_8UI);
+    int img_size = _index_texture_dimension.x * _index_texture_dimension.y * 3;
+    _index_texture = _device->create_texture_2d(_index_texture_dimension, FORMAT_RGB_8UI);
 
     // create img_size elements in vector with value 0
     std::vector<uint8_t> cpu_index_buffer(img_size, 0);
     update_index_texture(cpu_index_buffer);
+}
+
+void demo_app::calculate_best_physical_texture_size(uint32_t size_in_mb) {
+    // TODO: calculate based on the given size the optimal width and height
+    _physical_texture_dimension = scm::math::vec2ui(7,3);
 }
 
 /**
@@ -515,6 +521,8 @@ void demo_app::initialize_index_texture(){
  *   <max_quadtree_level>    // Number of the leaf level of the quadtree
  *   <index_texture_size>    // Size of max(leaf_tiles_in_x, leaf_tiles_in_y). Index texture is quadratic.
  *   <physical_texture_size> // Size of the physical texture in MB (application will determine the optimal number of tiles per row and column)
+ *
+ *   Example cmd line input: 256 2 4 512
  * @param argc
  * @param argv
  * @return
@@ -529,7 +537,6 @@ int main(int argc, char **argv) {
 
     // parse command line arguments
     uint32_t tile_size, max_quadtree_level, index_texture_size, physical_texture_size;
-
     tile_size             = atoi(argv[1]);
     max_quadtree_level    = atoi(argv[2]);
     index_texture_size    = atoi(argv[3]);
