@@ -28,12 +28,12 @@ void main() {
 
         // offset represented as tiles is divided by total num tiles per axis
         // (replace max_width_tiles later by correct uniform)
-        vec2 base_xy_offset = index_triplet.xy / vec2(physical_texture_dim);
+        vec2 base_xy_offset = index_triplet.xy;
 
         // just to be conformant to the modf interface (integer parts are ignored)
         vec2 dummy;
         vec2 physical_tile_ratio_xy = modf((swapped_y_texture_coordinates.xy * index_texture_dim / vec2(occupied_index_pixel_per_dimension)), dummy);
-        vec2 physical_texture_coordinates = base_xy_offset.xy + (physical_tile_ratio_xy / physical_texture_dim);
+        vec2 physical_texture_coordinates = (base_xy_offset.xy + physical_tile_ratio_xy) / physical_texture_dim;
 
         //c = vec4(physical_tile_ratio_xy, 0.0, 1.0);
         c = texture(physical_texture, physical_texture_coordinates);
