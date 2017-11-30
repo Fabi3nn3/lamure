@@ -113,6 +113,7 @@ private:
 
 
     void calculate_best_physical_texture_size(uint32_t size_in_mb);
+    void update_physical_texture_blockwise(char *buffer, uint32_t x, uint32_t y);
 }; // class demo_app
 
 namespace  {
@@ -456,7 +457,8 @@ void demo_app::tileloader(uint32_t level) {
 void demo_app::physical_texture_test_layout() {
     int tilesize = _tile_size * _tile_size * 4;
 
-    std::ifstream is ("../../apps/texture_fsquad/datatiles/numbered_tiles_w256_h256_t8x8_RGBA8.data", std::ios::binary);
+//    std::ifstream is ("../../apps/texture_fsquad/datatiles/numbered_tiles_w256_h256_t8x8_RGBA8.data", std::ios::binary);
+    std::ifstream is ("../../apps/texture_fsquad/datatiles/test.data", std::ios::binary);
 
     int offset_beg = 0;
     int offset_end = tilesize * _physical_texture_dimension.x * _physical_texture_dimension.y;
