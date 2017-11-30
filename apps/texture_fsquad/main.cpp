@@ -69,13 +69,15 @@ public:
     void initialize_index_texture();
     void update_index_texture(const std::vector<uint8_t> &cpu_buffer);
     void physical_texture_test_layout();
-
+    void toggle_view();
 private:
     uint32_t _tile_size;
     uint32_t _max_quadtree_level;
 
     scm::math::vec2ui _index_texture_dimension;
     scm::math::vec2ui _physical_texture_dimension;
+
+    bool toggle_phyiscal_texture_image_viewer = true;
 
     //trackball -> mouse and x+y coord.
     scm::gl::trackball_manipulator _trackball_manip;
@@ -215,6 +217,7 @@ void demo_app::display() {
     _shader_program->uniform("in_physical_texture_dim", _physical_texture_dimension);
     _shader_program->uniform("in_index_texture_dim", _index_texture_dimension);
     _shader_program->uniform("in_max_level", _max_quadtree_level);
+    _shader_program->uniform("in_toggle_view", toggle_phyiscal_texture_image_viewer);
 
     _context->clear_default_color_buffer(FRAMEBUFFER_BACK, vec4f(.2f, .2f, .2f, 1.0f));
     _context->clear_default_depth_stencil_buffer();
@@ -341,6 +344,9 @@ void glut_keyboard(unsigned char key, int x, int y) {
             exit (0);
         case 'f':
             glutFullScreenToggle();
+            break;
+        case ' ':
+            _application -> toggle_view();
             break;
         case '0':
             cpu_idx_texture_buffer_state = std::vector<uint8_t>(16*3, 0);
@@ -512,6 +518,10 @@ void demo_app::initialize_index_texture(){
 void demo_app::calculate_best_physical_texture_size(uint32_t size_in_mb) {
     // TODO: calculate based on the given size the optimal width and height
     _physical_texture_dimension = scm::math::vec2ui(7,3);
+}
+
+void demo_app::toggle_view() {
+    toggle_phyiscal_texture_image_viewer ^= 1;
 }
 
 /**

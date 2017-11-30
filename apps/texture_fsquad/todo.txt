@@ -6,7 +6,7 @@
 - physical texture size als Kommandozeilenparameter in MB                                           --> erledigt
   => calculate best fit for phyiscal_texture size (width and height)
   => how many tiles per row and column
-- per Knopfdruck: toggle zwischen physical texture visualisierung & image viewer
+- per Knopfdruck: toggle zwischen physical texture visualisierung & image viewer                    --> erledigt
 - Interface mit Anton abklären
 - upload physical texture in function blockwise (given a CPU block & offset in physical texture)
 - remove hard coded values everywhere (except for window size)                                      --> erledigt?
