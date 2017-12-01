@@ -70,6 +70,9 @@ public:
     void update_index_texture(const std::vector<uint8_t> &cpu_buffer);
     void physical_texture_test_layout();
     void toggle_view();
+    void calculate_best_physical_texture_size(uint32_t size_in_mb);
+    void update_physical_texture_blockwise(char *buffer, uint32_t x, uint32_t y);
+
 private:
     uint32_t _tile_size;
     uint32_t _max_quadtree_level;
@@ -112,8 +115,7 @@ private:
     scm::gl::rasterizer_state_ptr                    _ms_no_cull;
 
 
-    void calculate_best_physical_texture_size(uint32_t size_in_mb);
-    void update_physical_texture_blockwise(char *buffer, uint32_t x, uint32_t y);
+
 }; // class demo_app
 
 namespace  {
@@ -487,6 +489,31 @@ void demo_app::physical_texture_test_layout() {
 
         delete[] buffer;
     };
+}
+
+void update_physical_texture_blockwise(char *buffer, uint32_t x, uint32_t y) {
+    /*int tilesize = _tile_size * _tile_size * 4;
+
+    std::ifstream is ("../../apps/texture_fsquad/datatiles/numbered_tiles_w256_h256_t8x8_RGBA8.data", std::ios::binary);
+   // std::ifstream is ("../../apps/texture_fsquad/datatiles/test.data", std::ios::binary);
+
+
+    if (is) {
+        int length = offset_end - offset_beg;
+
+        //allocate memory
+        auto* buffer = new char [length];
+        is.read(buffer, length);
+
+        _context->update_sub_texture(_physical_texture,
+                                     scm::gl::texture_region(scm::math::vec3ui(x*_tile_size, y*_tile_size, 0),
+                                     scm::math::vec3ui(_tile_size,_tile_size, 1)),
+                                     0,
+                                     scm::gl::FORMAT_RGBA_8,
+                                     &buffer[*buffer]
+                                    );
+        delete[] buffer;
+    };*/
 }
 
 void demo_app::initialize_physical_texture() {
