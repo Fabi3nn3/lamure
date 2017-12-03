@@ -19,23 +19,37 @@ void main() {
     if(toggle_view == 0) { // Show the physical texture
         c = texture(physical_texture, swapped_y_texture_coordinates);
     } else { // Show the image viewer
+
+        //access on index texture, reading x,y,LoD into a uvec3 -> efficient
         uvec3 index_triplet = texture(index_texture, swapped_y_texture_coordinates).xyz;
+
+        //extracting LoD from index texture into a new var
         uint current_level = index_triplet.z;
 
+        //exponent for calculating the occupied pixel in our index texture, based on which level the tile is in
         uint tile_occupation_exponent = max_level - current_level;
 
+        //2^tile_occupation_exponent defines how many pixel (of the index texture) are used by the given tile
         uint occupied_index_pixel_per_dimension = uint(pow(2, tile_occupation_exponent));
 
         // offset represented as tiles is divided by total num tiles per axis
         // (replace max_width_tiles later by correct uniform)
+        //extracting x,y from index texture
         vec2 base_xy_offset = index_triplet.xy;
 
         // just to be conformant to the modf interface (integer parts are ignored)
         vec2 dummy;
+
+        //base x,y coordinates * number of tiles / number of used index texture pixel
+        //taking the factional part by modf
         vec2 physical_tile_ratio_xy = modf((swapped_y_texture_coordinates.xy * index_texture_dim / vec2(occupied_index_pixel_per_dimension)), dummy);
+
+        //adding the ratio for every texel to our base offset to get the right pixel in our tile and dividing it by the dimension of the phy. tex.
         vec2 physical_texture_coordinates = (base_xy_offset.xy + physical_tile_ratio_xy) / physical_texture_dim;
 
         //c = vec4(physical_tile_ratio_xy, 0.0, 1.0);
+
+        //outputting the calculated coordinate from our physical texture
         c = texture(physical_texture, physical_texture_coordinates);
     }
     out_color = c;
