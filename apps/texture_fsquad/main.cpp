@@ -458,33 +458,18 @@ void demo_app::tileloader(uint32_t level) {
 
 void demo_app::physical_texture_test_layout() {
     int tilesize = _tile_size * _tile_size * 4;
-
-//    std::ifstream is ("../../apps/texture_fsquad/datatiles/numbered_tiles_w256_h256_t8x8_RGBA8.data", std::ios::binary);
+//   std::ifstream is ("../../apps/texture_fsquad/datatiles/numbered_tiles_w256_h256_t8x8_RGBA8.data", std::ios::binary);
     std::ifstream is ("../../apps/texture_fsquad/datatiles/test.data", std::ios::binary);
 
-    int offset_beg = 0;
-    int offset_end = tilesize * _physical_texture_dimension.x * _physical_texture_dimension.y;
+    if (is){
 
-    if (is) {
-        int length = offset_end - offset_beg;
-
-        //allocate memory
-        auto* buffer = new char [length];
-
-        //read data as a block
-        is.read(buffer, length);
-        int counter = 0;
+        auto* buffer = new char [tilesize];
         for (unsigned y = 0; y < _physical_texture_dimension.y ; ++y) {
             for (unsigned x = 0; x < _physical_texture_dimension.x; ++x) {
-                _context->update_sub_texture(_physical_texture,
-                                             scm::gl::texture_region(scm::math::vec3ui(x*_tile_size, y*_tile_size, 0),
-                                                                     scm::math::vec3ui(_tile_size,_tile_size, 1)),
-                                             0,
-                                             scm::gl::FORMAT_RGBA_8,
-                                             &buffer[counter]
-                );
-                counter += tilesize;
+                is.read(buffer, tilesize);
+                update_physical_texture_blockwise(buffer, x, y);
             }
+            is.seekg(is.tellg());
         }
 
         delete[] buffer;
@@ -492,15 +477,6 @@ void demo_app::physical_texture_test_layout() {
 }
 
 void demo_app::update_physical_texture_blockwise(char *buffer, uint32_t x, uint32_t y) {
-    int tilesize = _tile_size * _tile_size * 4;
-
-    std::ifstream is ("../../apps/texture_fsquad/datatiles/numbered_tiles_w256_h256_t8x8_RGBA8.data", std::ios::binary);
-   // std::ifstream is ("../../apps/texture_fsquad/datatiles/test.data", std::ios::binary);
-
-
-    if (is) {
-        is.read(buffer, tilesize);
-
         _context->update_sub_texture(_physical_texture,
                                      scm::gl::texture_region(scm::math::vec3ui(x*_tile_size, y*_tile_size, 0),
                                      scm::math::vec3ui(_tile_size,_tile_size, 1)),
@@ -508,8 +484,6 @@ void demo_app::update_physical_texture_blockwise(char *buffer, uint32_t x, uint3
                                      scm::gl::FORMAT_RGBA_8,
                                      &buffer[0]
                                     );
-        delete[] buffer;
-    };
 }
 
 void demo_app::initialize_physical_texture() {

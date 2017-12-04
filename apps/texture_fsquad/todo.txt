@@ -1,4 +1,4 @@
-- fragment shader für uns kommentieren
+- fragment shader für uns kommentieren                                                              --> erledigt
 - eindeutige Variablennamen
 - Konstanten durch uniforms im shader ersetzen                                                      --> erledigt
 - durchwechseln durch die 3 States über Tastenkombination                                           --> erledigt
