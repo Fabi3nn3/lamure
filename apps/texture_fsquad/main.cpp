@@ -34,11 +34,6 @@
 static uint32_t winx = 800;
 static uint32_t winy = 800;
 
-scm::shared_ptr<scm::gl::render_context> _context;
-scm::gl::texture_2d_ptr                  _physical_texture;
-scm::gl::texture_2d_ptr                  _index_texture;
-
-
 class demo_app {
 public:
     demo_app() {
@@ -80,6 +75,11 @@ private:
     scm::math::vec2ui _index_texture_dimension;
     scm::math::vec2ui _physical_texture_dimension;
 
+    scm::shared_ptr<scm::gl::render_context> _context;
+    scm::gl::texture_2d_ptr                  _physical_texture;
+    scm::gl::texture_2d_ptr                  _index_texture;
+    scm::gl::texture_2d_ptr                  _feedback_image;
+
     bool toggle_phyiscal_texture_image_viewer = true;
 
     //trackball -> mouse and x+y coord.
@@ -115,7 +115,7 @@ private:
     scm::gl::rasterizer_state_ptr                    _ms_no_cull;
 
 
-
+    void initialize_feedback_image();
 }; // class demo_app
 
 namespace  {
@@ -189,6 +189,9 @@ bool demo_app::initialize(uint32_t tile_size,
     // TODO: define index texture size, tile space of vt
     initialize_index_texture();
 
+    // TODO FEEDBACK
+    initialize_feedback_image();
+
     _ms_no_cull = _device->create_rasterizer_state(FILL_SOLID, CULL_NONE, ORIENT_CCW, true);
 
     _trackball_manip.dolly(2.5f);
@@ -200,6 +203,9 @@ bool demo_app::initialize(uint32_t tile_size,
 void demo_app::display() {
     using namespace scm::gl;
     using namespace scm::math;
+
+    // TODO FEEDBACK
+    initialize_feedback_image();
 
     // clear the color and depth buffer
     //glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
@@ -245,6 +251,10 @@ void demo_app::display() {
         // TODO physical texture later with linear filter
         _context->bind_texture(_physical_texture, _filter_nearest, 0);
         _context->bind_texture(_index_texture,    _filter_nearest, 1);
+
+        // bind feedback image
+        // TODO FEEDBACK
+        _context->bind_image(_feedback_image, FORMAT_R_32UI, ACCESS_READ_WRITE, 2);
 
         _obj->draw(_context, geometry::MODE_SOLID);
     }
@@ -491,6 +501,24 @@ void demo_app::initialize_physical_texture() {
     using namespace scm::math;
     _physical_texture = _device->create_texture_2d(_physical_texture_dimension * _tile_size, FORMAT_RGBA_8);
     physical_texture_test_layout();
+}
+
+
+// TODO FEEDBACK
+void demo_app::initialize_feedback_image() {
+    using namespace scm::gl;
+    using namespace scm::math;
+    _feedback_image = _device->create_texture_2d(_physical_texture_dimension * _tile_size, FORMAT_R_32UI);
+
+    int img_size = _physical_texture_dimension.x * _physical_texture_dimension.y * 4;
+    std::vector<uint8_t> cpu_feeedback_buffer(img_size, 0);
+
+    _context->update_sub_texture(_feedback_image,
+                                 scm::gl::texture_region(scm::math::vec3ui(0, 0, 0),
+                                                         scm::math::vec3ui(_physical_texture_dimension, 1)),
+                                 0,
+                                 scm::gl::FORMAT_R_32UI,
+                                 &cpu_feeedback_buffer[0] );
 }
 
 

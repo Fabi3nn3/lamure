@@ -1,4 +1,4 @@
-#version 420 core
+#version 430 core
 
 in vec2 texture_coord;
 flat in uint max_level;
@@ -6,8 +6,10 @@ flat in uint toggle_view;
 flat in uvec2 physical_texture_dim;
 flat in uvec2 index_texture_dim;
 
-layout(binding  = 0) uniform sampler2D  physical_texture;
-layout(binding  = 1) uniform usampler2D index_texture;
+layout(binding  = 0)        uniform sampler2D  physical_texture;
+layout(binding  = 1)        uniform usampler2D index_texture;
+layout(binding  = 2, r32ui) coherent uniform uimage2D   feedback_image;
+
 layout(location = 0) out     vec4       out_color;
 
 void main() {
@@ -54,7 +56,17 @@ void main() {
 
         //outputting the calculated coordinate from our physical texture
         c = texture(physical_texture, physical_texture_coordinates);
+
+        // simple feedback
+        // TODO SOMETHING IS FISHY HERE
+        imageAtomicAdd(feedback_image, ivec2(0,0), 1);
+        c = imageLoad(feedback_image, ivec2(swapped_y_texture_coordinates));
+
+//        if(c.x > 600000) {
+//            c = vec4(c.x, 1, 0, 1);
+//        }
     }
+
     out_color = c;
 }
 
