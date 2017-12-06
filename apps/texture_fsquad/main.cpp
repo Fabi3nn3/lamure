@@ -508,10 +508,12 @@ void demo_app::initialize_physical_texture() {
 void demo_app::initialize_feedback_image() {
     using namespace scm::gl;
     using namespace scm::math;
-    _feedback_image = _device->create_texture_2d(_physical_texture_dimension * _tile_size, FORMAT_R_32UI);
 
-    int img_size = _physical_texture_dimension.x * _physical_texture_dimension.y * 4;
-    std::vector<uint8_t> cpu_feeedback_buffer(img_size, 0);
+    int img_size = _physical_texture_dimension.x * _physical_texture_dimension.y;
+    std::vector<uint32_t> cpu_feeedback_buffer(img_size, 0);
+//     cpu_feeedback_buffer = {0,0,0,1,0,0,0,
+//                             0,0,0,1,0,0,0,
+//                             0,0,0,1,0,0,0};
 
     _context->update_sub_texture(_feedback_image,
                                  scm::gl::texture_region(scm::math::vec3ui(0, 0, 0),

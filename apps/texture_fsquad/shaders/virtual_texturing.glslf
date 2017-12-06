@@ -59,11 +59,11 @@ void main() {
 
         // simple feedback
         // TODO SOMETHING IS FISHY HERE
-        imageAtomicAdd(feedback_image, ivec2(0,0), 1);
-        c = imageLoad(feedback_image, ivec2(swapped_y_texture_coordinates));
+        imageAtomicAdd(feedback_image, ivec2(base_xy_offset.xy ), 1);
+//        c = imageLoad(feedback_image, ivec2(swapped_y_texture_coordinates.xy * physical_texture_dim));
 
-//        if(c.x > 600000) {
-//            c = vec4(c.x, 1, 0, 1);
+//        if(ivec2(swapped_y_texture_coordinates * physical_texture_dim) == ivec2(2,0)) {
+//            c = vec4(0, 1, 0, 1);
 //        }
     }
 
