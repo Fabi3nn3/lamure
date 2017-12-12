@@ -14,11 +14,11 @@ CutUpdate::CutUpdate(vt::VTContext *context, vt::TileAtlas<priority_type> *atlas
     _context = context;
 
     // TODO: adapt to phys. texture size
-    _slots = new id_type[10];
+    _slots = new id_type[21];
 
     _slots[0] = 1;
 
-    for(size_t i = 1; i < 10; ++i){
+    for(size_t i = 1; i < 21; ++i){
         _slots[i] = 0;
     }
 }
@@ -137,7 +137,7 @@ void CutUpdate::run()
 }*/
 
 void CutUpdate::dispatch(){
-    for(size_t i = 0; i < 10; ++i){
+    for(size_t i = 0; i < 21; ++i){
         auto tile_id = _slots[i];
 
         if(tile_id == 0){
@@ -153,11 +153,17 @@ void CutUpdate::dispatch(){
                 auto child_id = QuadTree::get_child_id(tile_id, n);
                 auto tile_ptr = _atlas->get(child_id, 100);
 
+                for(size_t i = 0; i < 21; ++i){
+                    if(_slots[i] == (child_id + 1)){
+                        continue;
+                    }
+                }
+
                 if(tile_ptr != nullptr){
                     auto free_slot = get_free_slot();
 
                     if(free_slot != 0){
-                        _slots[free_slot - 1] = child_id;
+                        _slots[free_slot - 1] = child_id + 1;
 
                         //auto idx_tex_size = _context->get_size_index_texture() * _context->get_size_index_texture() * 3;
                         //std::cout << idx_tex_size << std::endl;
@@ -253,7 +259,7 @@ void CutUpdate::dispatch(){
 }
 
     size_t CutUpdate::get_free_slot() {
-        for(size_t i = 0; i < 10; ++i){
+        for(size_t i = 0; i < 21; ++i){
             if(_slots[i] == 0){
                 return i + 1;
             }

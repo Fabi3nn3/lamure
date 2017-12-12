@@ -91,11 +91,9 @@ void VTContext::start()
     _cut_update->start();
 
     // request tile 0 and wait until it is there
-    _atlas->get(0, 100);
-    _atlas->get(1, 100);
-    _atlas->get(2, 100);
-    _atlas->get(3, 100);
-    _atlas->get(4, 100);
+    for(size_t i = 0; i < 21; ++i) {
+        _atlas->get(i, 100);
+    }
     _atlas->wait();
 
     uint8_t cpu_idx_texture_buffer_state[48];
@@ -104,8 +102,9 @@ void VTContext::start()
         cpu_idx_texture_buffer_state[i] = 0;
     }
 
-    for(size_t i = 0; i < 5; ++i) {
+    for(size_t i = 0; i < 21; ++i) {
         char *tile = (char*)_atlas->get(i, 0);
+
         _vtrenderer->update_physical_texture_blockwise(tile, i, 0);
     }
     _vtrenderer->update_index_texture(cpu_idx_texture_buffer_state);
