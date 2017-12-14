@@ -103,7 +103,7 @@ void VTRenderer::render()
 
         // bind our texture and tell the graphics card to filter the samples linearly
         // TODO physical texture later with linear filter
-        _render_context->bind_texture(_physical_texture, _filter_nearest, 0);
+        _render_context->bind_texture(_physical_texture, _filter_linear, 0);
         _render_context->bind_texture(_index_texture, _filter_nearest, 1);
 
         // bind feedback image

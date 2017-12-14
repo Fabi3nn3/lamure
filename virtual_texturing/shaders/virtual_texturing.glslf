@@ -17,6 +17,9 @@ layout(location = 0) out vec4 out_color;
 
 void main()
 {
+    uint padding_size = 1;
+    uvec2 tile_size = uvec2(256);
+
     // swap y axis
     vec2 swapped_y_texture_coordinates = texture_coord;
     swapped_y_texture_coordinates.y = 1.0 - swapped_y_texture_coordinates.y;
@@ -54,13 +57,15 @@ void main()
 
         // base x,y coordinates * number of tiles / number of used index texture pixel
         // taking the factional part by modf
-
         vec2 physical_tile_ratio_xy = modf((swapped_y_texture_coordinates.xy * index_texture_dim / vec2(occupied_index_pixel_per_dimension)), dummy);
+
+        vec2 padding_scale  = vec2(1 - vec2(2*padding_size) / tile_size);
+        vec2 padding_offset = vec2(padding_size) / tile_size;
 
         // adding the ratio for every texel to our base offset to get the right pixel in our tile
         // and dividing it by the dimension of the phy. tex.
 
-        vec2 physical_texture_coordinates = (base_xy_offset.xy + physical_tile_ratio_xy) / physical_texture_dim;
+        vec2 physical_texture_coordinates = (base_xy_offset.xy + physical_tile_ratio_xy * padding_scale + padding_offset) / physical_texture_dim;
 
         // c = vec4(physical_tile_ratio_xy, 0.0, 1.0);
 
@@ -77,9 +82,9 @@ void main()
         uint one_d_feedback_ssbo_index = base_xy_offset.x + base_xy_offset.y * physical_texture_dim.x;
 
         reference_count = atomicAdd(out_feedback_values[one_d_feedback_ssbo_index], 1);
-        reference_count += 1;
+        // reference_count += 1;
 
-         c = vec4( float(reference_count) / (10*375542.857 / float( (current_level+1) * (current_level+1) )), (float(reference_count) / (10*375542.857 / float(current_level+1) * (current_level+1) )) * 0.3, 0.0, 1.0 );
+        //c = vec4( float(reference_count) / (10*375542.857 / float( (current_level+1) * (current_level+1) )), (float(reference_count) / (10*375542.857 / float(current_level+1) * (current_level+1) )) * 0.3, 0.0, 1.0 );
     }
 
     out_color = c;
