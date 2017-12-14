@@ -1,4 +1,6 @@
 #include <lamure/vt/VTContext.h>
+#include <lamure/vt/ooc/TileAtlas.h>
+#include <lamure/vt/ren/CutUpdate.h>
 #include <lamure/vt/ren/VTRenderer.h>
 namespace vt
 {
@@ -34,14 +36,17 @@ uint16_t VTContext::get_byte_stride() const
 
 void VTContext::start()
 {
-    if(access((_name_mipmap + ".data").c_str(), F_OK) != -1)
+    auto fileName = _name_mipmap + ".data";
+
+    if(access((fileName).c_str(), F_OK) != -1)
     {
         std::runtime_error("Mipmap file not found: " + _name_mipmap);
     }
 
+    _atlas = new vt::TileAtlas<priority_type>(fileName, _size_tile * _size_tile * get_byte_stride());
+
     _depth_quadtree = identify_depth();
     _size_index_texture = identify_size_index_texture();
-    _size_physical_texture = calculate_size_physical_texture();
 
     glfwSetErrorCallback(&VTContext::EventHandler::on_error);
 
@@ -81,32 +86,26 @@ void VTContext::start()
 
     glfwSetInputMode(_window, GLFW_CURSOR, GLFW_CURSOR_NORMAL);
 
-    //_cut_update = new CutUpdate();
-    //_cut_update->start();
+    _cut_update = new CutUpdate(this);
+    _cut_update->start();
 
-    _vtrenderer = new VTRenderer(this, (uint32_t)mode->width, (uint32_t)mode->height, _cut_update);
+    _vtrenderer = new VTRenderer(this, (uint32_t)mode->width, (uint32_t)mode->height);
 
     glewInit();
 
     while(!glfwWindowShouldClose(_window))
     {
-        // std::cout << "0" << std::endl;
-
         _vtrenderer->render();
-
-        // std::cout << "1" << std::endl;
-
-        //_vtrenderer->render_feedback();
-
-        // std::cout << "2" << std::endl;
 
         glfwSwapBuffers(_window);
         glfwPollEvents();
-
-        // std::cout << "3" << std::endl;
     }
 
-    //_cut_update->stop();
+    std::cout << "rendering stopped" << std::endl;
+
+    _cut_update->stop();
+
+    std::cout << "cut update stopped" << std::endl;
 
     glfwDestroyWindow(_window);
     glfwTerminate();
@@ -136,23 +135,37 @@ uint16_t VTContext::identify_depth()
 
     size_t depth = QuadTree::get_depth_of_node(count_tiled - 1);
 
-    return static_cast<uint16_t>(depth);
+    return (uint16_t)depth;
 }
 
 uint32_t VTContext::identify_size_index_texture() { return (uint32_t)std::pow(2, _depth_quadtree); }
 
-uint32_t VTContext::calculate_size_physical_texture()
+scm::math::vec2ui VTContext::calculate_size_physical_texture()
 {
     // TODO: define physical texture size, as huge as possible
-    return 0;
+    /* uint32_t number_of_tiles =  _size_physical_texture * 1024 * 1024 / tilesize;
+     uint32_t tiles_per_dim_x = 8192 /  _size_tile;
+     uint64_t tiles_per_dim_y = ceil((double)number_of_tiles / (double)tiles_per_dim_x);
+     std::cout << "phy_tex_dim: " << tiles_per_dim_x << " , " << tiles_per_dim_y << std::endl;*/
+    uint32_t input_in_byte = _size_physical_texture * 1024 * 1024;
+    uint32_t tilesize = (uint32_t)_size_tile * _size_tile * 4;
+    uint32_t total_amount_of_tiles = input_in_byte / tilesize;
+    uint32_t tiles_per_dim_x = (uint32_t)floor(sqrt(total_amount_of_tiles));
+    uint32_t tiles_per_dim_y = total_amount_of_tiles / tiles_per_dim_x;
+
+    std::cout << tiles_per_dim_x << " " << tiles_per_dim_y << std::endl;
+    return scm::math::vec2ui(tiles_per_dim_x, tiles_per_dim_y);
 }
 
 bool VTContext::EventHandler::isToggle_phyiscal_texture_image_viewer() const { return toggle_phyiscal_texture_image_viewer; }
 uint32_t VTContext::get_size_index_texture() const { return _size_index_texture; }
-uint32_t VTContext::get_size_physical_texture() const { return _size_physical_texture; }
 VTRenderer *VTContext::get_vtrenderer() const { return _vtrenderer; }
 VTContext::EventHandler *VTContext::get_event_handler() const { return _event_handler; }
 void VTContext::set_event_handler(VTContext::EventHandler *_event_handler) { VTContext::_event_handler = _event_handler; }
+
+VTContext::~VTContext() { delete _cut_update; }
+TileAtlas<priority_type> *VTContext::get_atlas() const { return _atlas; }
+CutUpdate *VTContext::get_cut_update() { return _cut_update; }
 
 void VTContext::EventHandler::on_error(int _err_code, const char *_err_msg) { throw std::runtime_error(_err_msg); }
 void VTContext::EventHandler::on_window_resize(GLFWwindow *_window, int _width, int _height)
@@ -177,26 +190,11 @@ void VTContext::EventHandler::on_window_key_press(GLFWwindow *_window, int _key,
     switch(_key)
     {
     case GLFW_KEY_ESCAPE:
-        glfwSetWindowShouldClose(_window, 1);
+        std::cout << "should close" << std::endl;
+        glfwSetWindowShouldClose(_window, GL_TRUE);
         break;
     case GLFW_KEY_SPACE:
         _vtcontext->_event_handler->toggle_phyiscal_texture_image_viewer = !_vtcontext->_event_handler->toggle_phyiscal_texture_image_viewer;
-        break;
-    case GLFW_KEY_0:
-        cpu_idx_texture_buffer_state = std::vector<uint8_t>(16 * 3, 0);
-        _vtcontext->_vtrenderer->update_index_texture(cpu_idx_texture_buffer_state);
-        break;
-    case GLFW_KEY_1:
-        cpu_idx_texture_buffer_state = {1, 0, 1, 1, 0, 1, 2, 0, 1, 2, 0, 1, 1, 0, 1, 1, 0, 1, 2, 0, 1, 2, 0, 1, 3, 0, 1, 3, 0, 1, 4, 0, 1, 4, 0, 1, 3, 0, 1, 3, 0, 1, 4, 0, 1, 4, 0, 1};
-        _vtcontext->_vtrenderer->update_index_texture(cpu_idx_texture_buffer_state);
-        break;
-    case GLFW_KEY_2:
-        cpu_idx_texture_buffer_state = {5, 0, 2, 6, 0, 2, 2, 1, 2, 3, 1, 2, 0, 1, 2, 1, 1, 2, 4, 1, 2, 5, 1, 2, 6, 1, 2, 0, 2, 2, 3, 2, 2, 4, 2, 2, 1, 2, 2, 2, 2, 2, 5, 2, 2, 6, 2, 2};
-        _vtcontext->_vtrenderer->update_index_texture(cpu_idx_texture_buffer_state);
-        break;
-    case GLFW_KEY_3:
-        cpu_idx_texture_buffer_state = {1, 0, 1, 1, 0, 1, 2, 0, 1, 2, 0, 1, 1, 0, 1, 1, 0, 1, 2, 0, 1, 2, 0, 1, 3, 0, 1, 3, 0, 1, 3, 2, 2, 4, 2, 2, 3, 0, 1, 3, 0, 1, 5, 2, 2, 6, 2, 2};
-        _vtcontext->_vtrenderer->update_index_texture(cpu_idx_texture_buffer_state);
         break;
     }
 }
@@ -227,16 +225,18 @@ void VTContext::EventHandler::on_window_button_press(GLFWwindow *_window, int _b
 }
 void VTContext::EventHandler::on_window_move_cursor(GLFWwindow *_window, double _xpos, double _ypos)
 {
+    // TODO
+}
+void VTContext::EventHandler::on_window_scroll(GLFWwindow *_window, double _xoffset, double _yoffset)
+{
     auto _vtcontext(static_cast<VTContext *>(glfwGetWindowUserPointer(_window)));
 
     EventHandler *_event_handler = _vtcontext->get_event_handler();
 
-    _event_handler->_initx = 2.f * float(_xpos - (_event_handler->_ref_width / 2)) / float(_event_handler->_ref_width);
-    _event_handler->_inity = 2.f * float(_event_handler->_ref_height - _ypos - (_event_handler->_ref_height / 2)) / float(_event_handler->_ref_height);
-}
-void VTContext::EventHandler::on_window_scroll(GLFWwindow *_window, double _xoffset, double _yoffset)
-{
-    // TODO
+    //    _event_handler->_initx = 2.f * float(_xpos - (_event_handler->_ref_width / 2)) / float(_event_handler->_ref_width);
+    //    _event_handler->_inity = 2.f * float(_event_handler->_ref_height - _ypos - (_event_handler->_ref_height / 2)) / float(_event_handler->_ref_height);
+
+    _event_handler->_trackball_manip.dolly(static_cast<float>(_yoffset));
 }
 void VTContext::EventHandler::on_window_enter(GLFWwindow *_window, int _entered)
 {

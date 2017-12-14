@@ -1,12 +1,15 @@
 #ifndef VT_CONTEXT_H
 #define VT_CONTEXT_H
 
-#include <lamure/vt/QuadTree.h>
 #include <lamure/vt/common.h>
-#include <lamure/vt/ren/CutUpdate.h>
+
 namespace vt
 {
 class VTRenderer;
+class CutUpdate;
+
+template <typename priority_type>
+class TileAtlas;
 class VTContext
 {
   public:
@@ -19,6 +22,7 @@ class VTContext
 
         // Texture management fields
         static constexpr const char *TILE_SIZE = "TILE_SIZE";
+        static constexpr const char *PHYSICAL_SIZE_MB = "PHYSICAL_SIZE_MB";
         static constexpr const char *NAME_TEXTURE = "NAME_TEXTURE";
         static constexpr const char *NAME_MIPMAP = "NAME_MIPMAP";
 
@@ -159,6 +163,7 @@ class VTContext
             }
 
             _context._size_tile = (uint16_t)atoi(_context._config->GetValue(Config::TEXTURE_MANAGEMENT, Config::TILE_SIZE, Config::UNDEF));
+            _context._size_physical_texture = (uint32_t)atoi(_context._config->GetValue(Config::TEXTURE_MANAGEMENT, Config::PHYSICAL_SIZE_MB, Config::UNDEF));
             _context._name_texture = std::string(_context._config->GetValue(Config::TEXTURE_MANAGEMENT, Config::NAME_TEXTURE, Config::UNDEF));
             _context._name_mipmap = std::string(_context._config->GetValue(Config::TEXTURE_MANAGEMENT, Config::NAME_MIPMAP, Config::UNDEF));
             _context._opt_run_in_parallel = atoi(_context._config->GetValue(Config::TEXTURE_MANAGEMENT, Config::OPT_RUN_IN_PARALLEL, Config::UNDEF)) == 1;
@@ -169,7 +174,7 @@ class VTContext
         }
     };
 
-    ~VTContext() = default;
+    ~VTContext();
 
     void start();
 
@@ -186,17 +191,19 @@ class VTContext
 
     uint16_t get_depth_quadtree() const;
     uint32_t get_size_index_texture() const;
-    uint32_t get_size_physical_texture() const;
 
+    TileAtlas<priority_type> *get_atlas() const;
     VTRenderer *get_vtrenderer() const;
+    CutUpdate *get_cut_update();
     EventHandler *get_event_handler() const;
+    scm::math::vec2ui calculate_size_physical_texture();
+
     void set_event_handler(EventHandler *_event_handler);
 
   private:
     explicit VTContext();
     uint16_t identify_depth();
     uint32_t identify_size_index_texture();
-    uint32_t calculate_size_physical_texture();
 
     CSimpleIniA *_config;
 
@@ -204,7 +211,9 @@ class VTContext
     EventHandler *_event_handler;
 
     VTRenderer *_vtrenderer;
+
     CutUpdate *_cut_update;
+    TileAtlas<priority_type> *_atlas;
 
     uint16_t _size_tile;
     std::string _name_texture;
