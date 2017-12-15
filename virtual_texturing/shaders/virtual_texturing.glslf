@@ -6,7 +6,7 @@ flat in uint toggle_view;
 flat in uvec2 physical_texture_dim;
 flat in uvec2 index_texture_dim;
 
-layout(binding = 0) uniform sampler2D physical_texture;
+layout(binding = 0) uniform sampler2DArray physical_texture_array;
 layout(binding = 1) uniform usampler2D index_texture;
 layout(location = 0) out vec4 out_color;
 
@@ -21,11 +21,17 @@ void main()
     {
         // Show the physical texture
 
-        c = texture(physical_texture, swapped_y_texture_coordinates);
+        c = texture(physical_texture_array, vec3(swapped_y_texture_coordinates, 4.0) );
     }
     else
     {
         // Show the image viewer
+
+        // you will probably have a 4-channel texture on the cpu (RGBA, => XXXXXXXX YYYYYYYY ZZZZZZZZ LLLLLLLL)
+        // X = X_index offset
+        // Y = Y_index_offset
+        // Z = Layer_index (as int, is cast to float when used)
+        // L = LOD
 
         // access on index texture, reading x,y,LoD into a uvec3 -> efficient
         uvec3 index_triplet = texture(index_texture, swapped_y_texture_coordinates).xyz;
@@ -57,7 +63,7 @@ void main()
         // c = vec4(physical_tile_ratio_xy, 0.0, 1.0);
 
         // outputting the calculated coordinate from our physical texture
-        c = texture(physical_texture, physical_texture_coordinates);
+        c = texture(physical_texture_array, vec3(physical_texture_coordinates, 4.0) );
     }
     out_color = c;
 }

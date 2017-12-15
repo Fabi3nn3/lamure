@@ -133,7 +133,7 @@ void VTRenderer::update_index_texture(std::vector<uint8_t> const &cpu_buffer)
 
 void VTRenderer::initialize_physical_texture()
 {
-    _physical_texture = _device->create_texture_2d(_physical_texture_dimension * _vtcontext->get_size_tile(), scm::gl::FORMAT_RGBA_8);
+    _physical_texture = _device->create_texture_2d(_physical_texture_dimension * _vtcontext->get_size_tile(), scm::gl::FORMAT_RGBA_8, 1, 5);
     physical_texture_test_layout();
 }
 
@@ -150,7 +150,7 @@ void VTRenderer::physical_texture_test_layout()
             for(unsigned x = 0; x < _physical_texture_dimension.x; ++x)
             {
                 is.read(buffer, tilesize);
-                _render_context->update_sub_texture(_physical_texture, scm::gl::texture_region(scm::math::vec3ui(x * _vtcontext->get_size_tile(), y * _vtcontext->get_size_tile(), 0),
+                _render_context->update_sub_texture(_physical_texture, scm::gl::texture_region(scm::math::vec3ui(x * _vtcontext->get_size_tile(), y * _vtcontext->get_size_tile(), 4),
                                                                                                scm::math::vec3ui(_vtcontext->get_size_tile(), _vtcontext->get_size_tile(), 1)),
                                                     0, scm::gl::FORMAT_RGBA_8, &buffer[0]);
             }
