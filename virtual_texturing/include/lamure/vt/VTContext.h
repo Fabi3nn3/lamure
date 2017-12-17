@@ -195,19 +195,20 @@ class VTContext
     scm::math::vec2ui calculate_size_physical_texture();
 
     void set_event_handler(EventHandler *_event_handler);
+    int _physical_texture_layers;
 private:
     explicit VTContext();
     uint16_t identify_depth();
+
     uint32_t identify_size_index_texture();
 
     CSimpleIniA *_config;
-
     GLFWwindow *_window;
+
     EventHandler *_event_handler;
-
     VTRenderer *_vtrenderer;
-    CutUpdate *_cut_update;
 
+    CutUpdate *_cut_update;
     uint16_t _size_tile;
     std::string _name_texture;
     std::string _name_mipmap;
@@ -215,8 +216,8 @@ private:
     bool _opt_row_in_core;
     Config::FORMAT_TEXTURE _format_texture;
     bool _keep_intermediate_data;
-    bool _verbose;
 
+    bool _verbose;
     uint16_t _depth_quadtree;
     uint32_t _size_index_texture;
     uint32_t _size_physical_texture;

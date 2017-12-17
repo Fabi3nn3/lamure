@@ -20,8 +20,8 @@ void main()
     if(toggle_view == 0)
     {
         // Show the physical texture
-
-        c = texture(physical_texture_array, vec3(swapped_y_texture_coordinates, 4.0) );
+        //TODO get layer from index.w and display layers dynamically
+        c = texture(physical_texture_array, vec3(swapped_y_texture_coordinates, 1.0) );
     }
     else
     {
@@ -63,7 +63,8 @@ void main()
         // c = vec4(physical_tile_ratio_xy, 0.0, 1.0);
 
         // outputting the calculated coordinate from our physical texture
-        c = texture(physical_texture_array, vec3(physical_texture_coordinates, 4.0) );
+        //TODO layer dym
+        c = texture(physical_texture_array, vec3(physical_texture_coordinates, 1.0) );
     }
     out_color = c;
 }

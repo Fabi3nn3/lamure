@@ -171,13 +171,29 @@ scm::math::vec2ui VTContext::calculate_size_physical_texture()
 
     std::cout << "gesamt: " << nTotalMemoryInKB << "  verfügbar: " << nCurAvailMemoryInKB << std::endl;
 
+    uint64_t max_tiles_per_dim = (nMaxTextureSize * nMaxTextureSize) / (1024 * 1024 * 4);
+    std::cout << "MAXIMUM: " << max_tiles_per_dim << std::endl;
+
+
+
     uint64_t input_in_byte = (uint64_t)_size_physical_texture * 1024 * 1024;
     uint64_t tilesize = _size_tile*_size_tile*4;
     uint64_t total_amount_of_tiles = input_in_byte / tilesize;
     uint64_t tiles_per_dim_x = floor(sqrt(total_amount_of_tiles));
     uint64_t tiles_per_dim_y = total_amount_of_tiles / tiles_per_dim_x;
     std::cout << tiles_per_dim_x << " " << tiles_per_dim_y << std::endl;
-    return scm::math::vec2ui(tiles_per_dim_x, tiles_per_dim_y);
+
+    if(tiles_per_dim_x && tiles_per_dim_y <= max_tiles_per_dim){
+        return scm::math::vec3ui(tiles_per_dim_x, tiles_per_dim_y, 1);
+    }
+    else{
+        _physical_texture_layers = ceil((float)(tiles_per_dim_x * tiles_per_dim_y) / (float)(max_tiles_per_dim * max_tiles_per_dim));
+        if(_physical_texture_layers > nMaxTextureArrayLayers){
+            std::cout << "Too many layers" << std::endl;
+        }
+        return scm::math::vec2ui(max_tiles_per_dim, max_tiles_per_dim);
+    }
+
 }
 
 bool VTContext::EventHandler::isToggle_phyiscal_texture_image_viewer() const { return toggle_phyiscal_texture_image_viewer; }

@@ -47,7 +47,7 @@ void VTRenderer::init()
     _filter_linear = _device->create_sampler_state(scm::gl::FILTER_MIN_MAG_LINEAR, scm::gl::WRAP_CLAMP_TO_EDGE);
 
     _index_texture_dimension = scm::math::vec2ui(_vtcontext->get_size_index_texture(), _vtcontext->get_size_index_texture());
-    // TODO: size dynamisch rein
+    // TODO: NOCHMAL FRAGEN WEIL VEC3 ÜBERGEBEN WIRD
     //_physical_texture_dimension = scm::math::vec2ui(_vtcontext->get_size_physical_texture(), _vtcontext->get_size_physical_texture());
     _physical_texture_dimension = _vtcontext->calculate_size_physical_texture();
 
@@ -124,7 +124,7 @@ void VTRenderer::initialize_index_texture()
     std::vector<uint8_t> cpu_index_buffer(img_size, 0);
     update_index_texture(cpu_index_buffer);
 }
-
+//TODO: give Index Texture 4 Channels -> holds layer which is used in shader for rendering (discuss with Anton and Sebastian)
 void VTRenderer::update_index_texture(std::vector<uint8_t> const &cpu_buffer)
 {
     _render_context->update_sub_texture(_index_texture, scm::gl::texture_region(scm::math::vec3ui(0, 0, 0), scm::math::vec3ui(_index_texture_dimension, 1)), 0, scm::gl::FORMAT_RGB_8UI,
@@ -133,7 +133,7 @@ void VTRenderer::update_index_texture(std::vector<uint8_t> const &cpu_buffer)
 
 void VTRenderer::initialize_physical_texture()
 {
-    _physical_texture = _device->create_texture_2d(_physical_texture_dimension * _vtcontext->get_size_tile(), scm::gl::FORMAT_RGBA_8, 1, 5);
+    _physical_texture = _device->create_texture_2d(_physical_texture_dimension * _vtcontext->get_size_tile(), scm::gl::FORMAT_RGBA_8, 1, 2);
     physical_texture_test_layout();
 }
 
@@ -142,19 +142,25 @@ void VTRenderer::physical_texture_test_layout()
     int tilesize = _vtcontext->get_size_tile() * _vtcontext->get_size_tile() * 4;
     std::ifstream is(_vtcontext->get_name_mipmap() + ".data", std::ios::binary);
 
+    int layer = _vtcontext -> _physical_texture_layers;
+    //TODO last Buffer == Buffer-1 -> fill black ?
     if(is)
     {
         auto *buffer = new char[tilesize];
-        for(unsigned y = 0; y < _physical_texture_dimension.y; ++y)
+        for (int i = 0; i < layer ; ++i)
         {
-            for(unsigned x = 0; x < _physical_texture_dimension.x; ++x)
+            for(unsigned y = 0; y < _physical_texture_dimension.y; ++y)
             {
-                is.read(buffer, tilesize);
-                _render_context->update_sub_texture(_physical_texture, scm::gl::texture_region(scm::math::vec3ui(x * _vtcontext->get_size_tile(), y * _vtcontext->get_size_tile(), 4),
-                                                                                               scm::math::vec3ui(_vtcontext->get_size_tile(), _vtcontext->get_size_tile(), 1)),
-                                                    0, scm::gl::FORMAT_RGBA_8, &buffer[0]);
+                for(unsigned x = 0; x < _physical_texture_dimension.x; ++x)
+                {
+                    is.read(buffer, tilesize);
+                    _render_context->update_sub_texture(_physical_texture, scm::gl::texture_region(scm::math::vec3ui(x * _vtcontext->get_size_tile(), y * _vtcontext->get_size_tile(), i),
+                                                                                                   scm::math::vec3ui(_vtcontext->get_size_tile(), _vtcontext->get_size_tile(), 1)),
+                                                        0, scm::gl::FORMAT_RGBA_8, &buffer[0]);
+                }
+                is.seekg(is.tellg());
             }
-            is.seekg(is.tellg());
+
         }
 
         delete[] buffer;
