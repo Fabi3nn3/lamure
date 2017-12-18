@@ -12,13 +12,12 @@
 #include <unistd.h>
 #include <utime.h>
 
-#include <atomic>
 #include <condition_variable>
 #include <fstream>
 #include <iostream>
 #include <mutex>
-#include <queue>
 #include <set>
+#include <atomic>
 #include <string>
 #include <thread>
 
@@ -40,7 +39,10 @@
 #include <scm/core/time/high_res_timer.h>
 #include <scm/log.h>
 
+
 #include <scm/gl_core.h>
+
+
 
 #include <scm/gl_util/data/imaging/texture_loader.h>
 #include <scm/gl_util/manipulators/trackball_manipulator.h>
@@ -51,7 +53,6 @@
 namespace vt
 {
 typedef uint64_t id_type;
-
 typedef uint32_t priority_type;
 }
 

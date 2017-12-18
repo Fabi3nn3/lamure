@@ -69,7 +69,7 @@ class TileDecompressor
 
         for(size_t i = 0; i < inSlot->getSize(); ++i)
         {
-            outPtr[i] = inPtr[i];
+            outPtr[i] = inPtr[i] * 3;
         }
 
         req->setState(TileRequest<priority_type>::STATE::READY);

@@ -2,6 +2,8 @@
 
 #include <lamure/vt/common.h>
 #include <lamure/vt/pre/Preprocessor.h>
+//#include <GL/glew.h>
+//#include <GLFW/glfw3.h>
 
 using namespace vt;
 
