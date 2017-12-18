@@ -15,29 +15,30 @@ void main()
     // swap y axis
     vec2 swapped_y_texture_coordinates = texture_coord;
     swapped_y_texture_coordinates.y = 1.0 - swapped_y_texture_coordinates.y;
-
+    // access on index texture, reading x,y,LoD into a uvec3 -> efficient
+    uvec4 index_quadruple = texture(index_texture, swapped_y_texture_coordinates).xyzw;
+    uint layer_id = index_quadruple.w;
     vec4 c;
     if(toggle_view == 0)
     {
         // Show the physical texture
         //TODO get layer from index.w and display layers dynamically
-        c = texture(physical_texture_array, vec3(swapped_y_texture_coordinates, 1.0) );
+        c = texture(physical_texture_array, vec3(swapped_y_texture_coordinates, layer_id) );
     }
     else
     {
         // Show the image viewer
 
-        // you will probably have a 4-channel texture on the cpu (RGBA, => XXXXXXXX YYYYYYYY ZZZZZZZZ LLLLLLLL)
+        // 4-channel texture on the cpu (RGBA, => XXXXXXXX YYYYYYYY ZZZZZZZZ WWWWWWWW)
         // X = X_index offset
         // Y = Y_index_offset
-        // Z = Layer_index (as int, is cast to float when used)
-        // L = LOD
+        // Z = LoD
+        // W = Layer_index (as int, is cast to float when used)
 
-        // access on index texture, reading x,y,LoD into a uvec3 -> efficient
-        uvec3 index_triplet = texture(index_texture, swapped_y_texture_coordinates).xyz;
+
 
         // extracting LoD from index texture into a new var
-        uint current_level = index_triplet.z;
+        uint current_level = index_quadruple.z;
 
         // exponent for calculating the occupied pixel in our index texture, based on which level the tile is in
         uint tile_occupation_exponent = max_level - current_level;
@@ -48,7 +49,7 @@ void main()
         // offset represented as tiles is divided by total num tiles per axis
         // (replace max_width_tiles later by correct uniform)
         // extracting x,y from index texture
-        vec2 base_xy_offset = index_triplet.xy;
+        vec2 base_xy_offset = index_quadruple.xy;
 
         // just to be conformant to the modf interface (integer parts are ignored)
         vec2 dummy;
@@ -64,7 +65,7 @@ void main()
 
         // outputting the calculated coordinate from our physical texture
         //TODO layer dym
-        c = texture(physical_texture_array, vec3(physical_texture_coordinates, 1.0) );
+        c = texture(physical_texture_array, vec3(physical_texture_coordinates, layer_id) );
     }
     out_color = c;
 }

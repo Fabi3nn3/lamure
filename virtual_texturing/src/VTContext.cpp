@@ -145,11 +145,8 @@ uint32_t VTContext::identify_size_index_texture() { return (uint32_t)std::pow(2,
 
 scm::math::vec2ui VTContext::calculate_size_physical_texture()
 {
-    // TODO: define physical texture size, as huge as possible
-   /* uint32_t number_of_tiles =  _size_physical_texture * 1024 * 1024 / tilesize;
-    uint32_t tiles_per_dim_x = 8192 /  _size_tile;
-    uint64_t tiles_per_dim_y = ceil((double)number_of_tiles / (double)tiles_per_dim_x);
-    std::cout << "phy_tex_dim: " << tiles_per_dim_x << " , " << tiles_per_dim_y << std::endl;*/
+    //TODO: wie würde Brute Force aussehen? berechnung effizienter machen
+    //only nvidia support
     GLint nTotalMemoryInKB = 0;
     glGetIntegerv( GL_GPU_MEM_INFO_TOTAL_AVAILABLE_MEM_NVX,
                    &nTotalMemoryInKB );
@@ -166,22 +163,20 @@ scm::math::vec2ui VTContext::calculate_size_physical_texture()
     glGetIntegerv( GL_MAX_ARRAY_TEXTURE_LAYERS,
                    &nMaxTextureArrayLayers );
 
-    std::cout << "MAX TEXTURE_SIZE: " << nMaxTextureSize << std::endl;
-    std::cout << "MAX_TEXTURE_LAYERS: " << nMaxTextureArrayLayers << std::endl;
+    //std::cout << "MAX TEXTURE_SIZE: " << nMaxTextureSize << std::endl;
+    //std::cout << "MAX_TEXTURE_LAYERS: " << nMaxTextureArrayLayers << std::endl;
 
-    std::cout << "gesamt: " << nTotalMemoryInKB << "  verfügbar: " << nCurAvailMemoryInKB << std::endl;
+    std::cout << "total gpu memory: " << nTotalMemoryInKB << " KB   currently available gpu memory: " << nCurAvailMemoryInKB <<" KB "<< std::endl;
 
     uint64_t max_tiles_per_dim = (nMaxTextureSize * nMaxTextureSize) / (1024 * 1024 * 4);
-    std::cout << "MAXIMUM: " << max_tiles_per_dim << std::endl;
-
-
+    std::cout << "Max Tiles/Dim: " << max_tiles_per_dim << std::endl;
 
     uint64_t input_in_byte = (uint64_t)_size_physical_texture * 1024 * 1024;
     uint64_t tilesize = _size_tile*_size_tile*4;
     uint64_t total_amount_of_tiles = input_in_byte / tilesize;
     uint64_t tiles_per_dim_x = floor(sqrt(total_amount_of_tiles));
     uint64_t tiles_per_dim_y = total_amount_of_tiles / tiles_per_dim_x;
-    std::cout << tiles_per_dim_x << " " << tiles_per_dim_y << std::endl;
+    std::cout << tiles_per_dim_x << " x " << tiles_per_dim_y << std::endl;
 
     if(tiles_per_dim_x && tiles_per_dim_y <= max_tiles_per_dim){
         return scm::math::vec3ui(tiles_per_dim_x, tiles_per_dim_y, 1);
@@ -236,60 +231,60 @@ void VTContext::EventHandler::on_window_key_press(GLFWwindow *_window, int _key,
         _vtcontext->_vtrenderer->update_index_texture(cpu_idx_texture_buffer_state);
         break;
     case GLFW_KEY_1:
-        cpu_idx_texture_buffer_state = {1, 0, 1,
-                                        1, 0, 1,
-                                        2, 0, 1,
-                                        2, 0, 1,
-                                        1, 0, 1,
-                                        1, 0, 1,
-                                        2, 0, 1,
-                                        2, 0, 1,
-                                        3, 0, 1,
-                                        3, 0, 1,
-                                        4, 0, 1,
-                                        4, 0, 1,
-                                        3, 0, 1,
-                                        3, 0, 1,
-                                        4, 0, 1,
-                                        4, 0, 1};
+        cpu_idx_texture_buffer_state = {1, 0, 1, 0,
+                                        1, 0, 1, 0,
+                                        2, 0, 1, 0,
+                                        2, 0, 1, 0,
+                                        1, 0, 1, 0,
+                                        1, 0, 1, 0,
+                                        2, 0, 1, 0,
+                                        2, 0, 1, 0,
+                                        3, 0, 1, 0,
+                                        3, 0, 1, 0,
+                                        4, 0, 1, 0,
+                                        4, 0, 1, 0,
+                                        3, 0, 1, 0,
+                                        3, 0, 1, 0,
+                                        4, 0, 1, 0,
+                                        4, 0, 1, 0};
         _vtcontext->_vtrenderer->update_index_texture(cpu_idx_texture_buffer_state);
         break;
     case GLFW_KEY_2:
-        cpu_idx_texture_buffer_state = {5, 0, 2,
-                                        6, 0, 2,
-                                        2, 1, 2,
-                                        3, 1, 2,
-                                        0, 1, 2,
-                                        1, 1, 2,
-                                        4, 1, 2,
-                                        5, 1, 2,
-                                        6, 1, 2,
-                                        0, 2, 2,
-                                        3, 2, 2,
-                                        4, 2, 2,
-                                        1, 2, 2,
-                                        2, 2, 2,
-                                        5, 2, 2,
-                                        6, 2, 2};
+        cpu_idx_texture_buffer_state = {5, 0, 2, 0,
+                                        6, 0, 2, 0,
+                                        2, 1, 2, 0,
+                                        3, 1, 2, 0,
+                                        0, 1, 2, 0,
+                                        1, 1, 2, 0,
+                                        4, 1, 2, 0,
+                                        5, 1, 2, 0,
+                                        6, 1, 2, 0,
+                                        0, 2, 2, 0,
+                                        3, 2, 2, 0,
+                                        4, 2, 2, 0,
+                                        1, 2, 2, 0,
+                                        2, 2, 2, 0,
+                                        5, 2, 2, 0,
+                                        6, 2, 2, 0};
         _vtcontext->_vtrenderer->update_index_texture(cpu_idx_texture_buffer_state);
         break;
     case GLFW_KEY_3:
-        cpu_idx_texture_buffer_state = {1, 0, 1,
-                                        1, 0, 1,
-                                        2, 0, 1,
-                                        2, 0, 1,
-                                        1, 0, 1,
-                                        1, 0, 1,
-                                        2, 0, 1,
-                                        2, 0, 1,
-                                        3, 0, 1,
-                                        3, 0, 1,
-                                        17, 0, 2,
-                                        18, 0, 2,
-                                        3, 0, 1,
-                                        3, 0, 1,
-                                        19, 0, 2,
-                                        20, 0, 2};
+        cpu_idx_texture_buffer_state = {1, 0, 1, 0,
+                                        1, 0, 1, 0,
+                                        2, 0, 1, 0,
+                                        2, 0, 1, 0,
+                                        1, 0, 1, 0,
+                                        1, 0, 1, 0,
+                                        2, 0, 1, 0,
+                                        2, 0, 1, 0,
+                                        3, 0, 1, 0,
+                                        3, 0, 1, 0,
+                                        17, 0, 2, 0,
+                                        18, 0, 2, 0,
+                                        3, 0, 1, 0,
+                                        3, 0, 1, 0,
+                                        19, 0, 2, 0,
+                                        20, 0, 2, 0};
         _vtcontext->_vtrenderer->update_index_texture(cpu_idx_texture_buffer_state);
         break;
     }

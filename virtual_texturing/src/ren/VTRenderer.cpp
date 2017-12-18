@@ -47,7 +47,6 @@ void VTRenderer::init()
     _filter_linear = _device->create_sampler_state(scm::gl::FILTER_MIN_MAG_LINEAR, scm::gl::WRAP_CLAMP_TO_EDGE);
 
     _index_texture_dimension = scm::math::vec2ui(_vtcontext->get_size_index_texture(), _vtcontext->get_size_index_texture());
-    // TODO: NOCHMAL FRAGEN WEIL VEC3 ÜBERGEBEN WIRD
     //_physical_texture_dimension = scm::math::vec2ui(_vtcontext->get_size_physical_texture(), _vtcontext->get_size_physical_texture());
     _physical_texture_dimension = _vtcontext->calculate_size_physical_texture();
 
@@ -117,8 +116,8 @@ void VTRenderer::render_feedback()
 
 void VTRenderer::initialize_index_texture()
 {
-    int img_size = _index_texture_dimension.x * _index_texture_dimension.y * 3;
-    _index_texture = _device->create_texture_2d(_index_texture_dimension, scm::gl::FORMAT_RGB_8UI);
+    int img_size = _index_texture_dimension.x * _index_texture_dimension.y * 4;     //*4 because of RGBA
+    _index_texture = _device->create_texture_2d(_index_texture_dimension, scm::gl::FORMAT_RGBA_8UI);
 
     // create img_size elements in vector with value 0
     std::vector<uint8_t> cpu_index_buffer(img_size, 0);
@@ -127,7 +126,7 @@ void VTRenderer::initialize_index_texture()
 //TODO: give Index Texture 4 Channels -> holds layer which is used in shader for rendering (discuss with Anton and Sebastian)
 void VTRenderer::update_index_texture(std::vector<uint8_t> const &cpu_buffer)
 {
-    _render_context->update_sub_texture(_index_texture, scm::gl::texture_region(scm::math::vec3ui(0, 0, 0), scm::math::vec3ui(_index_texture_dimension, 1)), 0, scm::gl::FORMAT_RGB_8UI,
+    _render_context->update_sub_texture(_index_texture, scm::gl::texture_region(scm::math::vec3ui(0, 0, 0), scm::math::vec3ui(_index_texture_dimension, 1)), 0, scm::gl::FORMAT_RGBA_8UI,
                                         &cpu_buffer[0]);
 }
 
