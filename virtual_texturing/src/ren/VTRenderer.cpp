@@ -80,8 +80,11 @@ void VTRenderer::render()
     // upload necessary information to vertex shader
     _shader_program->uniform("in_physical_texture_dim", _physical_texture_dimension);
     _shader_program->uniform("in_index_texture_dim", _index_texture_dimension);
-    _shader_program->uniform("in_max_level", ((uint32_t)_vtcontext->get_depth_quadtree()));
+    _shader_program->uniform("in_max_level", (uint32_t)_vtcontext->get_depth_quadtree());
     _shader_program->uniform("in_toggle_view", _vtcontext->get_event_handler()->isToggle_phyiscal_texture_image_viewer());
+
+    _shader_program->uniform("in_tile_size", (uint32_t)_vtcontext->get_size_tile());
+    _shader_program->uniform("in_tile_padding", (uint32_t)_vtcontext->get_size_padding());
 
     _render_context->clear_default_color_buffer(scm::gl::FRAMEBUFFER_BACK, scm::math::vec4f(.6f, .2f, .2f, 1.0f));
     _render_context->clear_default_depth_stencil_buffer();
@@ -114,8 +117,6 @@ void VTRenderer::render()
         _render_context->apply();
 
         _obj->draw(_render_context, scm::gl::geometry::MODE_SOLID);
-
-        _draw_ended = _render_context->insert_fence_sync();
 
         //////////////////////////////////////////////////////////////////////////////
         // FEEDBACK STUFF
@@ -215,12 +216,8 @@ void VTRenderer::initialize_feedback()
     using namespace scm::math;
     _copy_buffer_size = _physical_texture_dimension.x * _physical_texture_dimension.y * size_of_format(scm::gl::FORMAT_R_32UI);
     _copy_framebuffer = _device->create_frame_buffer();
-    _copy_buffer_0 = _device->create_buffer(scm::gl::BIND_PIXEL_PACK_BUFFER, scm::gl::USAGE_STREAM_DRAW, _copy_buffer_size);
-    _copy_buffer_1 = _device->create_buffer(scm::gl::BIND_PIXEL_PACK_BUFFER, scm::gl::USAGE_STREAM_DRAW, _copy_buffer_size);
 
     _atomic_feedback_storage_ssbo = _device->create_buffer(scm::gl::BIND_STORAGE_BUFFER, scm::gl::USAGE_STREAM_COPY, _copy_buffer_size);
-
-    _synchronized_copy_buffer = _device->create_buffer(scm::gl::BIND_VERTEX_BUFFER, scm::gl::USAGE_STREAM_READ, _copy_buffer_size);
 
     _feedback_image = _device->create_texture_2d(_physical_texture_dimension, scm::gl::FORMAT_R_32UI);
     reset_feedback_image();

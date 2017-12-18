@@ -5,6 +5,7 @@ namespace vt
 VTContext::VTContext() { _config = new CSimpleIniA(true, false, false); }
 
 uint16_t VTContext::get_size_tile() const { return _size_tile; }
+uint16_t VTContext::get_size_padding() const { return _size_padding; }
 const std::string &VTContext::get_name_texture() const { return _name_texture; }
 const std::string &VTContext::get_name_mipmap() const { return _name_mipmap; }
 bool VTContext::is_opt_run_in_parallel() const { return _opt_run_in_parallel; }

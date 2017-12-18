@@ -5,6 +5,10 @@ flat in uint max_level;
 flat in uint toggle_view;
 flat in uvec2 physical_texture_dim;
 flat in uvec2 index_texture_dim;
+flat in uvec2 physical_texture_dim;
+
+flat in vec2 tile_size;
+flat in vec2 tile_padding;
 
 layout (std430, binding = 0) buffer out_feedback_ssbo{
   uint[] out_feedback_values;
@@ -17,9 +21,6 @@ layout(location = 0) out vec4 out_color;
 
 void main()
 {
-    uint padding_size = 1;
-    uvec2 tile_size = uvec2(256);
-
     // swap y axis
     vec2 swapped_y_texture_coordinates = texture_coord;
     swapped_y_texture_coordinates.y = 1.0 - swapped_y_texture_coordinates.y;
@@ -59,12 +60,13 @@ void main()
         // taking the factional part by modf
         vec2 physical_tile_ratio_xy = modf((swapped_y_texture_coordinates.xy * index_texture_dim / vec2(occupied_index_pixel_per_dimension)), dummy);
 
-        vec2 padding_scale  = vec2(1 - vec2(2*padding_size) / tile_size);
-        vec2 padding_offset = vec2(padding_size) / tile_size;
+        // Use only tile_size - 2*tile_padding pixels to render scene
+        // Therefore, scale reduced tile size to full size and translate it
+        vec2 padding_scale  = 1 - 2*tile_padding / tile_size;
+        vec2 padding_offset = tile_padding / tile_size;
 
         // adding the ratio for every texel to our base offset to get the right pixel in our tile
         // and dividing it by the dimension of the phy. tex.
-
         vec2 physical_texture_coordinates = (base_xy_offset.xy + physical_tile_ratio_xy * padding_scale + padding_offset) / physical_texture_dim;
 
         // c = vec4(physical_tile_ratio_xy, 0.0, 1.0);
@@ -72,15 +74,8 @@ void main()
         // outputting the calculated coordinate from our physical texture
         c = texture(physical_texture, physical_texture_coordinates);
 
-        // simple feedback
-        // TODO SOMETHING IS FISHY HERE
-        //reference_count = imageAtomicAdd(feedback_image, ivec2(base_xy_offset.xy), 1);
-        //reference_count += 1;
-
-        //c = imageLoad(feedback_image, ivec2(swapped_y_texture_coordinates * physical_texture_dim));
-
+        // feedback calculation based on accumulated use of each rendered tile
         uint one_d_feedback_ssbo_index = base_xy_offset.x + base_xy_offset.y * physical_texture_dim.x;
-
         reference_count = atomicAdd(out_feedback_values[one_d_feedback_ssbo_index], 1);
         // reference_count += 1;
 

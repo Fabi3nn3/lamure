@@ -35,14 +35,6 @@ class VTRenderer
 
     scm::gl::buffer_ptr _atomic_feedback_storage_ssbo;
 
-    scm::gl::buffer_ptr _copy_buffer_0;
-    scm::gl::buffer_ptr _copy_buffer_1;
-
-    scm::gl::buffer_ptr _synchronized_copy_buffer;
-
-    scm::gl::sync_ptr _draw_ended;
-
-    scm::gl::sync_ptr _capture_finished;
     std::vector<uint32_t> _copy_memory;
     size_t _copy_buffer_size;
 
