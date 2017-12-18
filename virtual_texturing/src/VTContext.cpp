@@ -165,7 +165,6 @@ scm::math::vec2ui VTContext::calculate_size_physical_texture()
 
     //std::cout << "MAX TEXTURE_SIZE: " << nMaxTextureSize << std::endl;
     //std::cout << "MAX_TEXTURE_LAYERS: " << nMaxTextureArrayLayers << std::endl;
-
     std::cout << "total gpu memory: " << nTotalMemoryInKB << " KB   currently available gpu memory: " << nCurAvailMemoryInKB <<" KB "<< std::endl;
 
     uint64_t max_tiles_per_dim = (nMaxTextureSize * nMaxTextureSize) / (1024 * 1024 * 4);
