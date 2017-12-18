@@ -5,7 +5,6 @@ flat in uint max_level;
 flat in uint toggle_view;
 flat in uvec2 physical_texture_dim;
 flat in uvec2 index_texture_dim;
-flat in uvec2 physical_texture_dim;
 
 flat in vec2 tile_size;
 flat in vec2 tile_padding;
