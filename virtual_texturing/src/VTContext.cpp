@@ -163,14 +163,15 @@ scm::math::vec2ui VTContext::calculate_size_physical_texture()
     glGetIntegerv( GL_MAX_ARRAY_TEXTURE_LAYERS,
                    &nMaxTextureArrayLayers );
 
-    //std::cout << "MAX TEXTURE_SIZE: " << nMaxTextureSize << std::endl;
-    //std::cout << "MAX_TEXTURE_LAYERS: " << nMaxTextureArrayLayers << std::endl;
+    std::cout << "MAX TEXTURE_SIZE: " << nMaxTextureSize << std::endl;
+    std::cout << "MAX_TEXTURE_LAYERS: " << nMaxTextureArrayLayers << std::endl;
     std::cout << "total gpu memory: " << nTotalMemoryInKB << " KB   currently available gpu memory: " << nCurAvailMemoryInKB <<" KB "<< std::endl;
 
     uint64_t max_tiles_per_dim = (nMaxTextureSize * nMaxTextureSize) / (1024 * 1024 * 4);
     std::cout << "Max Tiles/Dim: " << max_tiles_per_dim << std::endl;
 
     uint64_t input_in_byte = (uint64_t)_size_physical_texture * 1024 * 1024;
+    uint64_t tmp = _size_physical_texture;
     uint64_t tilesize = _size_tile*_size_tile*4;
     uint64_t total_amount_of_tiles = input_in_byte / tilesize;
     uint64_t tiles_per_dim_x = floor(sqrt(total_amount_of_tiles));
@@ -178,7 +179,8 @@ scm::math::vec2ui VTContext::calculate_size_physical_texture()
     std::cout << tiles_per_dim_x << " x " << tiles_per_dim_y << std::endl;
 
     if(tiles_per_dim_x && tiles_per_dim_y <= max_tiles_per_dim){
-        return scm::math::vec3ui(tiles_per_dim_x, tiles_per_dim_y, 1);
+        _physical_texture_layers = 1;
+        return scm::math::vec2ui(tiles_per_dim_x, tiles_per_dim_y);
     }
     else{
         _physical_texture_layers = ceil((float)(tiles_per_dim_x * tiles_per_dim_y) / (float)(max_tiles_per_dim * max_tiles_per_dim));

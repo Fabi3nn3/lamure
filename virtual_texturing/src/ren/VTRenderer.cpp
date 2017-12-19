@@ -132,7 +132,9 @@ void VTRenderer::update_index_texture(std::vector<uint8_t> const &cpu_buffer)
 
 void VTRenderer::initialize_physical_texture()
 {
-    _physical_texture = _device->create_texture_2d(_physical_texture_dimension * _vtcontext->get_size_tile(), scm::gl::FORMAT_RGBA_8, 1, 2);
+    //TODO an letzte Stelle Layer?
+    int layer = _vtcontext -> _physical_texture_layers;
+    _physical_texture = _device->create_texture_2d(_physical_texture_dimension * _vtcontext->get_size_tile(), scm::gl::FORMAT_RGBA_8, 1,2);
     physical_texture_test_layout();
 }
 
