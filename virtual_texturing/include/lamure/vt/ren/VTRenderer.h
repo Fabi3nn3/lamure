@@ -37,6 +37,11 @@ class VTRenderer
     scm::gl::sampler_state_ptr _filter_nearest;
     scm::gl::sampler_state_ptr _filter_linear;
     scm::gl::rasterizer_state_ptr _ms_no_cull;
+    //TODO Wirklich Shared ptr?
+    //scm::shared_ptr<scm::gl::texture_handle> _texture_handle_ptr;
+    //scm::gl::texture_handle _texture_handle;
+    scm::gl::texture_handle_ptr _physical_tex_handle;
+    scm::gl::texture_handle_ptr _index_tex_handle;
 
     uint32_t _width, _height;
 

@@ -55,9 +55,13 @@ void VTRenderer::init()
     initialize_index_texture();
     initialize_physical_texture();
 
-    //scm::gl::texture_handle(_device, _physical_texture, _filter_nearest);
-    auto handler = _device->create_resident_handle(_physical_texture,_filter_nearest);
     _render_context->make_resident(_physical_texture,_filter_nearest);
+    _render_context->make_resident(_index_texture, _filter_nearest);
+
+    _physical_tex_handle = _device->create_resident_handle(_physical_texture,_filter_nearest);
+    _index_tex_handle = _device->create_resident_handle(_physical_texture,_filter_nearest);
+
+
 
     _ms_no_cull = _device->create_rasterizer_state(scm::gl::FILL_SOLID, scm::gl::CULL_NONE, scm::gl::ORIENT_CCW, true);
 }
@@ -78,6 +82,20 @@ void VTRenderer::render()
     _shader_program->uniform("model_view_matrix_inverse_transpose", mv_inv_transpose);
 
     // upload necessary information to vertex shader
+    uint64_t _native_physical_texture = _physical_tex_handle->native_handle();
+    std::cout << _native_physical_texture << std::endl;
+    uint64_t _native_index_texture = _index_tex_handle->native_handle();
+    std::cout << _native_index_texture << std::endl;
+
+    //split 64 Address in 2x 32 Address
+    /*scm::math::vec2ui physical_texture_native_handle_ = {_native_physical_texture & 0x00000000ffffffff, _native_physical_texture & 0xffffffff00000000};
+    scm::math::vec2ui index_texture_native_handle_ = {_native_index_texture & 0x00000000ffffffff, _native_index_texture & 0xffffffff00000000};
+    std::cout << "phy & index vec2 address ";
+    std::cout << physical_texture_native_handle_.x << physical_texture_native_handle_.y<< std::endl;
+    std::cout << index_texture_native_handle_.x << index_texture_native_handle_.y << std::endl;*/
+
+    //+ index handle
+
     _shader_program->uniform("in_physical_texture_dim", _physical_texture_dimension);
     _shader_program->uniform("in_index_texture_dim", _index_texture_dimension);
     _shader_program->uniform("in_max_level", ((uint32_t)_vtcontext->get_depth_quadtree()));
