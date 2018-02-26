@@ -10,6 +10,19 @@ layout(binding = 0) uniform sampler2DArray physical_texture_array;
 layout(binding = 1) uniform usampler2D index_texture;
 layout(location = 0) out vec4 out_color;
 
+/*
+Zur Erinnerung:
+https://www.khronos.org/opengl/wiki/Bindless_Texture
+layout(bindless_sampler) uniform sampler2D bindless;
+layout(bindless_image) uniform image2D bindless2;
+layout(bindless_sampler) uniform;
+layout(bindless_image) uniform;
+void glUniformHandleui64ARB(GLint location​, GLuint64 value​);
+void glUniformHandleui64vARB(GLint location​, GLsizei count​, const GLuint64 *value​);
+void glProgramUniformHandleui64ARB(GLuint program​, GLint location​, GLuint64 value​);
+void glProgramUniformHandleui64vARB(GLuint program​, GLint location​, GLsizei count​, const GLuint64 *values​);
+*/
+
 void main()
 {
     // swap y axis

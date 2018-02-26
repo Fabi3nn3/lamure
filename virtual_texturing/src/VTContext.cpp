@@ -85,7 +85,7 @@ void VTContext::start()
 
     //_cut_update = new CutUpdate();
     //_cut_update->start();
-
+    //TODO bindless Textures müssen schon bindless sein wenn VTRenderer erstellt wird
     _vtrenderer = new VTRenderer(this, (uint32_t)mode->width, (uint32_t)mode->height, _cut_update);
 
     glewInit();

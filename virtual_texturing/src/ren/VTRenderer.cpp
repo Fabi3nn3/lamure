@@ -55,6 +55,10 @@ void VTRenderer::init()
     initialize_index_texture();
     initialize_physical_texture();
 
+    //scm::gl::texture_handle(_device, _physical_texture, _filter_nearest);
+    auto handler = _device->create_resident_handle(_physical_texture,_filter_nearest);
+    _render_context->make_resident(_physical_texture,_filter_nearest);
+
     _ms_no_cull = _device->create_rasterizer_state(scm::gl::FILL_SOLID, scm::gl::CULL_NONE, scm::gl::ORIENT_CCW, true);
 }
 
@@ -99,6 +103,10 @@ void VTRenderer::render()
 
         // bind our texture and tell the graphics card to filter the samples linearly
         // TODO physical texture later with linear filter
+        // TODO bindless bind_texture -> create handle
+
+
+        //
         _render_context->bind_texture(_physical_texture, _filter_nearest, 0);
         _render_context->bind_texture(_index_texture, _filter_nearest, 1);
 
@@ -132,8 +140,9 @@ void VTRenderer::update_index_texture(std::vector<uint8_t> const &cpu_buffer)
 
 void VTRenderer::initialize_physical_texture()
 {
-    //TODO an letzte Stelle Layer?
+    //TODO an letzte Stelle Layer?git
     int layer = _vtcontext -> _physical_texture_layers;
+    // TODO bindless
     _physical_texture = _device->create_texture_2d(_physical_texture_dimension * _vtcontext->get_size_tile(), scm::gl::FORMAT_RGBA_8, 1,2);
     physical_texture_test_layout();
 }
@@ -155,6 +164,7 @@ void VTRenderer::physical_texture_test_layout()
                 for(unsigned x = 0; x < _physical_texture_dimension.x; ++x)
                 {
                     is.read(buffer, tilesize);
+                    // TODO bindless adjust update subtexture to handle or dereference
                     _render_context->update_sub_texture(_physical_texture, scm::gl::texture_region(scm::math::vec3ui(x * _vtcontext->get_size_tile(), y * _vtcontext->get_size_tile(), i),
                                                                                                    scm::math::vec3ui(_vtcontext->get_size_tile(), _vtcontext->get_size_tile(), 1)),
                                                         0, scm::gl::FORMAT_RGBA_8, &buffer[0]);
