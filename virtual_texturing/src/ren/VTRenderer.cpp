@@ -55,11 +55,11 @@ void VTRenderer::init()
     initialize_index_texture();
     initialize_physical_texture();
 
-    _render_context->make_resident(_physical_texture,_filter_nearest);
-    _render_context->make_resident(_index_texture, _filter_nearest);
 
     _physical_tex_handle = _device->create_resident_handle(_physical_texture,_filter_nearest);
     _index_tex_handle = _device->create_resident_handle(_physical_texture,_filter_nearest);
+    _render_context->make_resident(_physical_texture,_filter_nearest);
+    _render_context->make_resident(_index_texture, _filter_nearest);
 
 
 
@@ -86,6 +86,10 @@ void VTRenderer::render()
     std::cout << _native_physical_texture << std::endl;
     uint64_t _native_index_texture = _index_tex_handle->native_handle();
     std::cout << _native_index_texture << std::endl;
+
+    //TODO bindless nochmal nach schauen
+    scm::math::vec2ui phy_tex_handle_near  = scm::math::vec2ui(static_cast<uint32_t>(_physical_tex_handle->native_handle() & 0x00000000ffffffffull),
+                                    static_cast<uint32_t>(_physical_tex_handle->native_handle() >> 32ull));
 
     //split 64 Address in 2x 32 Address
     /*scm::math::vec2ui physical_texture_native_handle_ = {_native_physical_texture & 0x00000000ffffffff, _native_physical_texture & 0xffffffff00000000};
@@ -208,9 +212,14 @@ VTRenderer::~VTRenderer()
 
     _ms_no_cull.reset();
 
+    _physical_tex_handle.reset();
+
     _render_context.reset();
     _device.reset();
     _scm_core.reset();
+
+
+
 }
 void VTRenderer::resize(int _width, int _height)
 {
