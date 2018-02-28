@@ -43,25 +43,26 @@ void VTRenderer::init()
     // TODO: gua scenegraph to handle geometry eventually
     _obj.reset(new scm::gl::wavefront_obj_geometry(_device, std::string(LAMURE_PRIMITIVES_DIR) + "/quad.obj"));
 
+    //create sampler states
     _filter_nearest = _device->create_sampler_state(scm::gl::FILTER_MIN_MAG_NEAREST, scm::gl::WRAP_CLAMP_TO_EDGE);
     _filter_linear = _device->create_sampler_state(scm::gl::FILTER_MIN_MAG_LINEAR, scm::gl::WRAP_CLAMP_TO_EDGE);
 
     _index_texture_dimension = scm::math::vec2ui(_vtcontext->get_size_index_texture(), _vtcontext->get_size_index_texture());
     //_physical_texture_dimension = scm::math::vec2ui(_vtcontext->get_size_physical_texture(), _vtcontext->get_size_physical_texture());
     _physical_texture_dimension = _vtcontext->calculate_size_physical_texture();
-
     //_physical_texture_dimension = scm::math::vec2ui(7, 3);
 
+    //_device->create_texture2D
     initialize_index_texture();
     initialize_physical_texture();
 
 
-    _physical_tex_handle = _device->create_resident_handle(_physical_texture,_filter_nearest);
-    _index_tex_handle = _device->create_resident_handle(_physical_texture,_filter_nearest);
-    _render_context->make_resident(_physical_texture,_filter_nearest);
-    _render_context->make_resident(_index_texture, _filter_nearest);
+
+    //handles
 
 
+    //_render_context->make_resident(_physical_texture, _filter_nearest);
+    //_render_context->make_resident(_index_texture, _filter_nearest);
 
     _ms_no_cull = _device->create_rasterizer_state(scm::gl::FILL_SOLID, scm::gl::CULL_NONE, scm::gl::ORIENT_CCW, true);
 }
@@ -77,29 +78,19 @@ void VTRenderer::render()
     scm::math::mat4f model_view_matrix = /*view_matrix **/ model_matrix;
     scm::math::mat4f mv_inv_transpose = transpose(inverse(model_view_matrix));
 
+    //split 64 Address in 2x 32 Address
+    scm::math::vec2ui physical_texture_native_handle_= scm::math::vec2ui(static_cast<uint32_t>(_physical_tex_handle->native_handle() & 0x00000000ffffffff),
+                                                                         static_cast<uint32_t>(_physical_tex_handle->native_handle() & 0xffffffff00000000));
+
+    scm::math::vec2ui index_texture_native_handle_= scm::math::vec2ui(static_cast<uint32_t>(_index_tex_handle->native_handle() & 0x00000000ffffffff),
+                                                                      static_cast<uint32_t>(_index_tex_handle->native_handle() & 0xffffffff00000000));
+
     _shader_program->uniform("projection_matrix", _projection_matrix);
     _shader_program->uniform("model_view_matrix", model_view_matrix);
     _shader_program->uniform("model_view_matrix_inverse_transpose", mv_inv_transpose);
-
-    // upload necessary information to vertex shader
-    uint64_t _native_physical_texture = _physical_tex_handle->native_handle();
-    std::cout << _native_physical_texture << std::endl;
-    uint64_t _native_index_texture = _index_tex_handle->native_handle();
-    std::cout << _native_index_texture << std::endl;
-
-    //TODO bindless nochmal nach schauen
-    scm::math::vec2ui phy_tex_handle_near  = scm::math::vec2ui(static_cast<uint32_t>(_physical_tex_handle->native_handle() & 0x00000000ffffffffull),
-                                    static_cast<uint32_t>(_physical_tex_handle->native_handle() >> 32ull));
-
-    //split 64 Address in 2x 32 Address
-    /*scm::math::vec2ui physical_texture_native_handle_ = {_native_physical_texture & 0x00000000ffffffff, _native_physical_texture & 0xffffffff00000000};
-    scm::math::vec2ui index_texture_native_handle_ = {_native_index_texture & 0x00000000ffffffff, _native_index_texture & 0xffffffff00000000};
-    std::cout << "phy & index vec2 address ";
-    std::cout << physical_texture_native_handle_.x << physical_texture_native_handle_.y<< std::endl;
-    std::cout << index_texture_native_handle_.x << index_texture_native_handle_.y << std::endl;*/
-
-    //+ index handle
-
+    //upload handles to shader
+    _shader_program->uniform("physical_resident_near",physical_texture_native_handle_);
+    _shader_program->uniform("index_resident_near",index_texture_native_handle_);
     _shader_program->uniform("in_physical_texture_dim", _physical_texture_dimension);
     _shader_program->uniform("in_index_texture_dim", _index_texture_dimension);
     _shader_program->uniform("in_max_level", ((uint32_t)_vtcontext->get_depth_quadtree()));
@@ -128,9 +119,11 @@ void VTRenderer::render()
         // TODO bindless bind_texture -> create handle
 
 
-        //
-        _render_context->bind_texture(_physical_texture, _filter_nearest, 0);
-        _render_context->bind_texture(_index_texture, _filter_nearest, 1);
+        //immer noch bind_tex() ??? TODO bindless
+        //_render_context->bind_texture(_physical_texture, _filter_nearest, 0);
+        //_render_context->bind_texture(_index_texture, _filter_nearest, 1);
+        //resident tex or resident tex_handle ??? TODO bindless
+
 
         _render_context->apply();
 
@@ -149,6 +142,8 @@ void VTRenderer::initialize_index_texture()
     int img_size = _index_texture_dimension.x * _index_texture_dimension.y * 4;     //*4 because of RGBA
     _index_texture = _device->create_texture_2d(_index_texture_dimension, scm::gl::FORMAT_RGBA_8UI);
 
+    _index_tex_handle = _device->create_resident_handle(_index_texture,_filter_nearest);
+
     // create img_size elements in vector with value 0
     std::vector<uint8_t> cpu_index_buffer(img_size, 0);
     update_index_texture(cpu_index_buffer);
@@ -156,16 +151,19 @@ void VTRenderer::initialize_index_texture()
 //TODO: give Index Texture 4 Channels -> holds layer which is used in shader for rendering (discuss with Anton and Sebastian)
 void VTRenderer::update_index_texture(std::vector<uint8_t> const &cpu_buffer)
 {
+    //_render_context->make_non_resident(_index_texture);
     _render_context->update_sub_texture(_index_texture, scm::gl::texture_region(scm::math::vec3ui(0, 0, 0), scm::math::vec3ui(_index_texture_dimension, 1)), 0, scm::gl::FORMAT_RGBA_8UI,
                                         &cpu_buffer[0]);
+    //_render_context->make_resident(_index_texture, _filter_nearest);
 }
 
 void VTRenderer::initialize_physical_texture()
 {
     //TODO an letzte Stelle Layer?git
     int layer = _vtcontext -> _physical_texture_layers;
-    // TODO bindless
     _physical_texture = _device->create_texture_2d(_physical_texture_dimension * _vtcontext->get_size_tile(), scm::gl::FORMAT_RGBA_8, 1,2);
+    _physical_tex_handle = _device->create_resident_handle(_physical_texture,_filter_linear);
+
     physical_texture_test_layout();
 }
 
@@ -187,9 +185,11 @@ void VTRenderer::physical_texture_test_layout()
                 {
                     is.read(buffer, tilesize);
                     // TODO bindless adjust update subtexture to handle or dereference
+                    //_render_context->make_non_resident(_physical_texture);
                     _render_context->update_sub_texture(_physical_texture, scm::gl::texture_region(scm::math::vec3ui(x * _vtcontext->get_size_tile(), y * _vtcontext->get_size_tile(), i),
                                                                                                    scm::math::vec3ui(_vtcontext->get_size_tile(), _vtcontext->get_size_tile(), 1)),
                                                         0, scm::gl::FORMAT_RGBA_8, &buffer[0]);
+                    //_render_context->make_resident(_physical_texture, _filter_nearest);
                 }
                 is.seekg(is.tellg());
             }
@@ -213,6 +213,7 @@ VTRenderer::~VTRenderer()
     _ms_no_cull.reset();
 
     _physical_tex_handle.reset();
+    _index_tex_handle.reset();
 
     _render_context.reset();
     _device.reset();

@@ -1,12 +1,21 @@
 #ifndef VT_CONTEXT_H
 #define VT_CONTEXT_H
 
+#include <iostream>
+
 #include <lamure/vt/QuadTree.h>
 #include <lamure/vt/common.h>
 #include <lamure/vt/ren/CutUpdate.h>
 namespace vt
 {
 class VTRenderer;
+
+
+static void perform_cut_update() {
+
+    std::cout << "Perform one iteration of the cut update\n"
+}
+
 class VTContext
 {
   public:

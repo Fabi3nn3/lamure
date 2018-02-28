@@ -1,4 +1,5 @@
 #version 420 core
+#extension GL_ARB_bindless_texture : require
 
 in vec2 texture_coord;
 flat in uint max_level;
@@ -6,37 +7,33 @@ flat in uint toggle_view;
 flat in uvec2 physical_texture_dim;
 flat in uvec2 index_texture_dim;
 
-layout(binding = 0) uniform sampler2DArray physical_texture_array;
-layout(binding = 1) uniform usampler2D index_texture;
-layout(location = 0) out vec4 out_color;
+uniform uvec2 physical_resident_near;
+uniform uvec2 index_resident_near;
+/*alternative:
+layout(bindless_sampler) uniform sampler2D physical_resident_near;
+layout(bindless_sampler) uniform sampler2D index_resident_near;*/
 
-/*
-Zur Erinnerung:
-https://www.khronos.org/opengl/wiki/Bindless_Texture
-layout(bindless_sampler) uniform sampler2D bindless;
-layout(bindless_image) uniform image2D bindless2;
-layout(bindless_sampler) uniform;
-layout(bindless_image) uniform;
-void glUniformHandleui64ARB(GLint location​, GLuint64 value​);
-void glUniformHandleui64vARB(GLint location​, GLsizei count​, const GLuint64 *value​);
-void glProgramUniformHandleui64ARB(GLuint program​, GLint location​, GLuint64 value​);
-void glProgramUniformHandleui64vARB(GLuint program​, GLint location​, GLsizei count​, const GLuint64 *values​);
-*/
+//layout(binding = 0) uniform sampler2DArray physical_texture_array;
+//layout(binding = 1) uniform usampler2D index_texture;
+layout(location = 0) out vec4 out_color;
 
 void main()
 {
+    sampler2DArray physical_tex_sample = sampler2DArray(physical_resident_near);
+    usampler2D index_tex_sample = usampler2D(index_resident_near);
+
     // swap y axis
     vec2 swapped_y_texture_coordinates = texture_coord;
     swapped_y_texture_coordinates.y = 1.0 - swapped_y_texture_coordinates.y;
     // access on index texture, reading x,y,LoD into a uvec3 -> efficient
-    uvec4 index_quadruple = texture(index_texture, swapped_y_texture_coordinates).xyzw;
+    uvec4 index_quadruple = texture(index_tex_sample, swapped_y_texture_coordinates).xyzw;
     uint layer_id = index_quadruple.w;
     vec4 c;
     if(toggle_view == 0)
     {
         // Show the physical texture
         //TODO get layer from index.w and display layers dynamically
-        c = texture(physical_texture_array, vec3(swapped_y_texture_coordinates, layer_id) );
+        c = texture(physical_tex_sample, vec3(swapped_y_texture_coordinates, layer_id) );
     }
     else
     {
@@ -78,7 +75,7 @@ void main()
 
         // outputting the calculated coordinate from our physical texture
         //TODO layer dym
-        c = texture(physical_texture_array, vec3(physical_texture_coordinates, layer_id) );
+        c = texture(physical_tex_sample, vec3(physical_texture_coordinates, layer_id) );
     }
     out_color = c;
 }
