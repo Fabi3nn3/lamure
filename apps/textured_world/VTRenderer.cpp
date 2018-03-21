@@ -145,16 +145,16 @@ void VTRenderer::clear_buffers(uint16_t context_id)
 
     _ctxt_resources[context_id]->_render_context->apply();
 }
-void VTRenderer::render(uint32_t color_data_id, uint32_t elevation_data_id, uint16_t view_id, uint16_t context_id)
+void VTRenderer::render(uint32_t color_data_id, uint16_t view_id, uint16_t context_id)
 {
     using namespace scm::math;
     using namespace scm::gl;
 
     uint64_t color_cut_id = (((uint64_t)color_data_id) << 32) | ((uint64_t)view_id << 16) | ((uint64_t)context_id);
-    uint64_t elevation_cut_id = (((uint64_t)elevation_data_id) << 32) | ((uint64_t)view_id << 16) | ((uint64_t)context_id);
+    // uint64_t elevation_cut_id = (((uint64_t)elevation_data_id) << 32) | ((uint64_t)view_id << 16) | ((uint64_t)context_id);
 
     uint32_t max_depth_level_color = (*CutDatabase::get_instance().get_cut_map())[color_cut_id]->get_atlas()->getDepth() - 1;
-    uint32_t max_depth_level_elevation = (*CutDatabase::get_instance().get_cut_map())[elevation_cut_id]->get_atlas()->getDepth() - 1;
+    // uint32_t max_depth_level_elevation = (*CutDatabase::get_instance().get_cut_map())[elevation_cut_id]->get_atlas()->getDepth() - 1;
 
     mat4f projection_matrix = mat4f::identity();
     perspective_matrix(projection_matrix, 10.f + _view_resources[view_id]->_scale * 100.f, float(_view_resources[view_id]->_width) / float(_view_resources[view_id]->_height), 0.01f, 1000.0f);
@@ -169,8 +169,8 @@ void VTRenderer::render(uint32_t color_data_id, uint32_t elevation_data_id, uint
     _shader_vt->uniform("in_index_dim_color", _data_resources[color_data_id]->_index_texture_dimension);
     _shader_vt->uniform("in_max_level_color", max_depth_level_color);
 
-    _shader_vt->uniform("in_index_dim_elevation", _data_resources[elevation_data_id]->_index_texture_dimension);
-    _shader_vt->uniform("in_max_level_elevation", max_depth_level_elevation);
+    // _shader_vt->uniform("in_index_dim_elevation", _data_resources[elevation_data_id]->_index_texture_dimension);
+    // _shader_vt->uniform("in_max_level_elevation", max_depth_level_elevation);
 
     _shader_vt->uniform("in_toggle_view", true);
     _shader_vt->uniform("in_physical_texture_dim", _ctxt_resources[context_id]->_physical_texture_dimension);
@@ -195,7 +195,7 @@ void VTRenderer::render(uint32_t color_data_id, uint32_t elevation_data_id, uint
 
     _ctxt_resources[context_id]->_render_context->bind_texture(_ctxt_resources[context_id]->_physical_texture, _filter_linear, 0);
     _ctxt_resources[context_id]->_render_context->bind_texture(_data_resources[color_data_id]->_index_texture, _filter_nearest, 1);
-    _ctxt_resources[context_id]->_render_context->bind_texture(_data_resources[elevation_data_id]->_index_texture, _filter_nearest, 2);
+    // _ctxt_resources[context_id]->_render_context->bind_texture(_data_resources[elevation_data_id]->_index_texture, _filter_nearest, 2);
 
     _ctxt_resources[context_id]->_render_context->bind_storage_buffer(_ctxt_resources[context_id]->_feedback_storage, 0);
 

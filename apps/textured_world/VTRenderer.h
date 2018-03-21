@@ -32,7 +32,7 @@ class VTRenderer
     explicit VTRenderer(CutUpdate *cut_update);
     ~VTRenderer();
 
-    void render(uint32_t color_data_id, uint32_t elevation_data_id, uint16_t view_id, uint16_t context_id);
+    void render(uint32_t color_data_id, uint16_t view_id, uint16_t context_id);
     void update_view(uint16_t view_id, uint32_t width, uint32_t height, float scale, const scm::math::mat4f &view_matrix);
 
     void add_data(uint64_t cut_id, uint32_t data_id);

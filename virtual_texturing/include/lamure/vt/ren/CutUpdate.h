@@ -6,6 +6,8 @@
 #include <lamure/vt/VTConfig.h>
 #include <lamure/vt/ren/Cut.h>
 
+#include <condition_variable>
+
 namespace vt
 {
 typedef std::set<id_type> id_set_type;
@@ -13,7 +15,15 @@ typedef std::set<id_type> id_set_type;
 class CutUpdate
 {
   public:
-    explicit CutUpdate();
+    static CutUpdate &get_instance()
+    {
+        static CutUpdate instance;
+        return instance;
+    }
+
+    CutUpdate(CutUpdate const &) = delete;
+    void operator=(CutUpdate const &) = delete;
+
     ~CutUpdate();
 
     void start();
@@ -26,6 +36,8 @@ class CutUpdate
     bool get_freeze_dispatch();
 
 private:
+    CutUpdate();
+
     std::thread _worker;
     std::mutex _dispatch_lock;
     std::condition_variable _cv;

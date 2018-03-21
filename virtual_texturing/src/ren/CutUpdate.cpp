@@ -18,7 +18,7 @@ CutUpdate::~CutUpdate() {}
 
 void CutUpdate::start()
 {
-    _cut_db->get_tile_provider()->start(VTConfig::get_instance().get_size_ram_cache() * 1024 * 1024);
+    _cut_db->get_tile_provider()->start((size_t)VTConfig::get_instance().get_size_ram_cache() * 1024 * 1024);
     _worker = std::thread(&CutUpdate::run, this);
 }
 

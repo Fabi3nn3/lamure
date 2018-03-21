@@ -275,16 +275,16 @@ int main(int argc, char *argv[])
     vt::VTConfig::get_instance().define_size_physical_texture(64, 8192);
 
     uint32_t data_world_map_id = vt::CutDatabase::get_instance().register_dataset("earth_stitch_86400x43200_256x256_p1_rgb_packed.atlas");
-    uint32_t data_world_elevation_id = vt::CutDatabase::get_instance().register_dataset("gebco_256x256_p1_rgb_packed.atlas");
+    // uint32_t data_world_elevation_id = vt::CutDatabase::get_instance().register_dataset("gebco_256x256_p1_rgb_packed.atlas");
 
     uint16_t view_id = vt::CutDatabase::get_instance().register_view();
     uint16_t primary_context_id = vt::CutDatabase::get_instance().register_context();
 
     uint64_t cut_map_id = vt::CutDatabase::get_instance().register_cut(data_world_map_id, view_id, primary_context_id);
-    uint64_t cut_elevation_id = vt::CutDatabase::get_instance().register_cut(data_world_elevation_id, view_id, primary_context_id);
+    // uint64_t cut_elevation_id = vt::CutDatabase::get_instance().register_cut(data_world_elevation_id, view_id, primary_context_id);
 
     // Registration of resources has to happen before cut update start
-    auto *cut_update = new vt::CutUpdate();
+    vt::CutUpdate *cut_update = &vt::CutUpdate::get_instance();
     cut_update->start();
 
     glfwSetErrorCallback(EventHandler::on_error);
@@ -305,7 +305,7 @@ int main(int argc, char *argv[])
     auto *vtrenderer = new vt::VTRenderer(cut_update);
 
     vtrenderer->add_data(cut_map_id, data_world_map_id);
-    vtrenderer->add_data(cut_elevation_id, data_world_elevation_id);
+    // vtrenderer->add_data(cut_elevation_id, data_world_elevation_id);
     vtrenderer->add_view(view_id, primary_window->_width, primary_window->_height, primary_window->_scale);
     vtrenderer->add_context(primary_context_id);
 
@@ -339,21 +339,21 @@ int main(int argc, char *argv[])
 
                 vtrenderer->clear_buffers(primary_context_id);
 
-                vtrenderer->render(data_world_map_id, data_world_elevation_id, view_id, primary_context_id);
+                vtrenderer->render(data_world_map_id, view_id, primary_context_id);
 
                 vtrenderer->collect_feedback(primary_context_id);
 #ifndef NDEBUG
-//                vtrenderer->extract_debug_cut(data_world_map_id, view_id, primary_context_id);
-//                vtrenderer->extract_debug_cut(data_world_elevation_id, view_id, primary_context_id);
-//                vtrenderer->extract_debug_context(primary_context_id);
-//
-//                ImGui_ImplGlfwGL3_NewFrame();
-//
-//                vtrenderer->render_debug_cut(data_world_map_id, view_id, primary_context_id);
-//                vtrenderer->render_debug_cut(data_world_elevation_id, view_id, primary_context_id);
-//                vtrenderer->render_debug_context(primary_context_id);
-//
-//                ImGui::Render();
+                vtrenderer->extract_debug_cut(data_world_map_id, view_id, primary_context_id);
+                // vtrenderer->extract_debug_cut(data_world_elevation_id, view_id, primary_context_id);
+                vtrenderer->extract_debug_context(primary_context_id);
+
+                ImGui_ImplGlfwGL3_NewFrame();
+
+                vtrenderer->render_debug_cut(data_world_map_id, view_id, primary_context_id);
+                // vtrenderer->render_debug_cut(data_world_elevation_id, view_id, primary_context_id);
+                vtrenderer->render_debug_context(primary_context_id);
+
+                ImGui::Render();
 #else
                 // TODO: get rid of this
                 std::this_thread::sleep_for(std::chrono::milliseconds(100));
